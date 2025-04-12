@@ -1,0 +1,57 @@
+FROM nvidia/cuda:11.8.0-base-ubuntu22.04
+
+# Set noninteractive installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install ROS2 Humble
+RUN apt-get update && apt-get install -y locales curl gnupg2 lsb-release
+RUN locale-gen en_US en_US.UTF-8
+RUN update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+ENV LANG=en_US.UTF-8
+ENV TZ=Etc/UTC
+RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null
+
+RUN apt-get update && apt-get install -y \
+    vim \
+    tmux \
+    clang \
+    python3-pip \
+    python3-pytest-cov \
+    python3-pytest-repeat \
+    python3-pytest-rerunfailures \
+    python3-flake8-docstrings \
+    python3-flake8-blind-except \
+    python3-flake8-builtins \
+    python3-flake8-class-newline \
+    python3-flake8-comprehensions \
+    python3-flake8-deprecated \
+    python3-flake8-import-order \
+    python3-flake8-quotes
+
+RUN apt-get update && apt-get install -y \
+    gazebo \
+    ros-dev-tools \
+    ros-humble-desktop \
+    ros-humble-gazebo-ros \
+    ros-humble-gazebo-ros-pkgs \
+    ros-humble-gazebo-plugins \
+    ros-humble-turtlebot3-simulations \
+    && rm -rf /var/lib/apt/lists/
+
+# Create a workspace directory
+RUN mkdir -p /ros2_ws/src
+
+# Set the working directory
+WORKDIR /ros2_ws
+
+# Set environment variables
+ENV TURTLEBOT3_MODEL=waffle
+ENV GAZEBO_MODEL_PATH=/opt/ros/humble/share/turtlebot3_gazebo/models:$GAZEBO_MODEL_PATH
+ENV GAZEBO_RESOURCE_PATH=/opt/ros/humble/share/turtlebot3_gazebo:$GAZEBO_RESOURCE_PATH
+
+# Setup entrypoint
+COPY ./ros_entrypoint_nvidia.sh /
+RUN chmod +x /ros_entrypoint_nvidia.sh
+ENTRYPOINT ["/ros_entrypoint_nvidia.sh"]
+CMD ["bash"]
