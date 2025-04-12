@@ -122,7 +122,8 @@ For a more advanced example with a lidar, use the turtlebot3 simulator:
 
 4. In another terminal, run the teleop node:
    ```bash
-   ros2 run turtlebot3_teleop teleop_keyboard
+   ros2 run teleop_twist_keyboard teleop_twist_keyboard
+   # ros2 run turtlebot3_teleop teleop_keyboard
    ```
 
 5. View the lidar scan data:
@@ -169,7 +170,7 @@ ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py
 
 To run your ROS2 Docker container with NVIDIA GPU acceleration, you'll need to set up NVIDIA Container Toolkit and modify your Docker run command. Here's how to do it:
 
-1. Install NVIDIA Container Toolkit
+1. Install NVIDIA Container Toolkit on the host
 
 ```bash
 # Add the NVIDIA repository
@@ -185,10 +186,10 @@ sudo apt-get install -y nvidia-container-toolkit
 sudo systemctl restart docker
 ```
 
-2. Modify the Docker daemon to use the NVIDIA Container Toolkit
+2. Option A: Modify the ROS2 docker to use the NVIDIA Container Toolkit
 
 ```bash
-FROM osrf/ros:humble-desktop
+FROM nvidia/cuda:11.8.0-base-ubuntu22.04
 
 # Install NVIDIA GL libraries
 RUN apt-get update && apt-get install -y \
@@ -246,9 +247,7 @@ docker run -it --rm \
 ```
 The key addition here is the --gpus all flag, which enables GPU access inside the container.
 
-4. Alternatively, you can use the NVIDIA base image
-
-For even better integration, you can base your image on NVIDIA's CUDA image
+4. Option B: Alternatively, a new ROS2 docker can use the NVIDIA CUDA base image
 
 ```bash
 FROM nvidia/cuda:11.8.0-base-ubuntu22.04

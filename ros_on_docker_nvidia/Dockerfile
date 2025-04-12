@@ -49,6 +49,8 @@ WORKDIR /ros2_ws
 ENV TURTLEBOT3_MODEL=waffle
 ENV GAZEBO_MODEL_PATH=/opt/ros/humble/share/turtlebot3_gazebo/models:$GAZEBO_MODEL_PATH
 ENV GAZEBO_RESOURCE_PATH=/opt/ros/humble/share/turtlebot3_gazebo:$GAZEBO_RESOURCE_PATH
+ENV LIBGL_ALWAYS_INDIRECT=0
+ENV MESA_GL_VERSION_OVERRIDE=3.3
 
 # Setup entrypoint
 COPY ./ros_entrypoint_nvidia.sh /
