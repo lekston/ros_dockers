@@ -1,0 +1,25 @@
+# Second stage: add kiss-icp converter
+FROM ros2-dev-gpu-s1 AS ros2-dev-gpu-kiss-icp
+
+# Install nlohmann/json library
+RUN apt-get update && apt-get install -y \
+    nlohmann-json3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the kiss-icp-converter repository into the workspace
+COPY kiss-icp-converter /ros2_ws/src/kiss-icp-converter
+
+# Build the kiss-icp library first
+WORKDIR /ros2_ws/src/kiss-icp-converter/src/kiss-icp
+RUN make cpp
+RUN make test
+RUN make install
+
+# Return to the ROS workspace and build everything
+WORKDIR /ros2_ws
+RUN . /opt/ros/${ROS_DISTRO}/setup.sh && \
+    colcon build --symlink-install
+
+ENTRYPOINT ["/ros_entrypoint_nvidia.sh"]
+
+CMD ["bash"]

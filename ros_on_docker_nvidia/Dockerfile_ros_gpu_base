@@ -1,4 +1,4 @@
-FROM nvidia/cuda:11.8.0-base-ubuntu22.04
+FROM nvidia/cuda:11.8.0-base-ubuntu22.04 AS ros2-gpu-base
 
 # Set noninteractive installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -15,6 +15,7 @@ RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/r
 RUN apt-get update && apt-get install -y \
     vim \
     tmux \
+    tree \
     clang \
     python3-pip \
     python3-pytest-cov \
@@ -41,14 +42,16 @@ RUN apt-get update && apt-get install -y \
 
 # Create a workspace directory
 RUN mkdir -p /ros2_ws/src
+RUN mkdir -p /ros2_ws/src_wip
 
 # Set the working directory
 WORKDIR /ros2_ws
 
 # Set environment variables
+ENV ROS_DISTRO=humble
 ENV TURTLEBOT3_MODEL=waffle
-ENV GAZEBO_MODEL_PATH=/opt/ros/humble/share/turtlebot3_gazebo/models:$GAZEBO_MODEL_PATH
-ENV GAZEBO_RESOURCE_PATH=/opt/ros/humble/share/turtlebot3_gazebo:$GAZEBO_RESOURCE_PATH
+# ENV GAZEBO_MODEL_PATH=/opt/ros/humble/share/turtlebot3_gazebo/models
+# ENV GAZEBO_RESOURCE_PATH=/opt/ros/humble/share/turtlebot3_gazebo
 ENV LIBGL_ALWAYS_INDIRECT=0
 ENV MESA_GL_VERSION_OVERRIDE=3.3
 
@@ -56,4 +59,5 @@ ENV MESA_GL_VERSION_OVERRIDE=3.3
 COPY ./ros_entrypoint_nvidia.sh /
 RUN chmod +x /ros_entrypoint_nvidia.sh
 ENTRYPOINT ["/ros_entrypoint_nvidia.sh"]
+
 CMD ["bash"]
