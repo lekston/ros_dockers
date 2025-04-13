@@ -1,37 +1,68 @@
-# Start from the ROS2 Humble base
-FROM osrf/ros:humble-desktop
+# Start from the ROS2 Foxy base
+FROM osrf/ros:foxy-ros1-bridge AS ros1-ros2-bridge
 
 SHELL ["/bin/bash", "-c"]
 
 # Install ROS1 Noetic
-RUN apt-get update && apt-get install -y \
+RUN apt-get update || true  # proceed despite errors from OSRF key server
+RUN apt-get install -y \
+    vim \
+    tmux \
+    tree \
+    clang \
     curl \
     gnupg2 \
-    lsb-release
-RUN curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | apt-key add -
-RUN echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros1-latest.list \
-RUN apt-get update && apt-get install -y \
-    python3-rosbag \
+    locales \
+    lsb-release \
     python3-pip
 
-# RUN apt-get install -y \
-#     ros-noetic-ros-base \
-#     ros-noetic-rosbag \
-#     && rm -rf /var/lib/apt/lists/*
+RUN locale-gen en_US en_US.UTF-8
+RUN update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
 
-# # Install ros1_bridge
-# RUN apt-get install -y ros-humble-ros1-bridge
+ENV LANG=en_US.UTF-8
+ENV TZ=Etc/UTC
 
-# # Install rosbag2_bag_v2_plugins for reading ROS1 bags in ROS2
-# # This plugin allows reading legacy ROS1 bag files directly in ROS2
-# RUN apt-get install -y ros-humble-rosbag2-bag-v2-plugins
+# Use ROS Noetic from Ubuntu 20.04 repositories
+RUN sh -c 'echo "deb [arch=amd64] http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros1-latest.list'
 
-# # Install other useful tools
-# RUN apt-get install -y \
-#     ros-humble-rosbag2 \
-#     ros-humble-rosbag2-transport
+# ROS2 key
+RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key  -o /usr/share/keyrings/ros-archive-keyring.gpg
+# ROS1 key
+RUN curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.key | apt-key add -
+
+# Update and install ROS1 packages
+RUN apt-get update
+RUN apt-get install -y \
+    ros-noetic-ros-base \
+    ros-noetic-rosbag
+
+# Install ros1_bridge
+RUN apt-get install -y ros-foxy-ros1-bridge
+
+# Install rosbag2_bag_v2_plugins for reading ROS1 bags in ROS2
+# This plugin allows reading legacy ROS1 bag files directly in ROS2
+RUN apt-get install -y ros-foxy-rosbag2-bag-v2-plugins
+
+# Install other useful tools
+RUN apt-get install -y \
+    ros-foxy-rosbag2 \
+    ros-foxy-rosbag2-transport
+
+RUN apt upgrade -y  # Required for fixing ros-foxy-rosbag2-bag-v2-plugins
+
+RUN rm -rf /var/lib/apt/lists/*
 
 WORKDIR /ros2_ws
+
+RUN source /opt/ros/foxy/setup.bash
+
+RUN mkdir -p /ros2_ws/livox_ws \
+    && cd /ros2_ws/livox_ws \
+    && git clone https://github.com/Livox-SDK/livox_ros_driver2.git src/livox_ros_driver2 \
+    && cd src/livox_ros_driver2 \
+    && git checkout ros2 \
+    && colcon build --packages-select livox_ros_driver2 \
+    && source install/setup.bash
 
 # Set up entrypoint
 COPY ros1_ros2_entrypoint.sh /entrypoint.sh
@@ -42,4 +73,6 @@ CMD ["bash"]
 # Add usage instructions as comments
 # To read ROS1 bags in ROS2:
 # ros2 bag info -s rosbag_v2 /path/to/your/ros1bag.bag
-# ros2 bag play -s rosbag_v2 /path/to/your/ros1bag.bag 
+# ros2 bag play -s rosbag_v2 /path/to/your/ros1bag.bag
+
+# IMPORTANT: The ROS 1 installation must be sourced before ROS2 to avoid problems with the class_loader.

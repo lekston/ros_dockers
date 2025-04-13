@@ -395,3 +395,16 @@ export GAZEBO_MODEL_DATABASE_URI=http://models.gazebosim.org
 3. Model Path Issues: If models don't appear correctly, you may need to install the same model packages on the host or set up a shared volume for models.
 
 This distributed approach can dramatically improve Gazebo performance while still allowing you to keep your ROS2 environment containerized.
+
+
+# Converting ROS1 bags to ROS2 bags
+
+```bash
+ros2 bag play -s rosbag_v2 --read-ahead-queue-size 30000 /ros2_ws/data/TIERS/forest01_st_square_2022-02-08-23-14-55.bag
+```
+
+
+Recording:
+```bash
+ros2 bag record -a -o /ros2_ws/data/TIERS/forest01_st_square_2022-02-08-ros2
+```
