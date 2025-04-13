@@ -1,0 +1,45 @@
+# Start from the ROS2 Humble base
+FROM osrf/ros:humble-desktop
+
+SHELL ["/bin/bash", "-c"]
+
+# Install ROS1 Noetic
+RUN apt-get update && apt-get install -y \
+    curl \
+    gnupg2 \
+    lsb-release
+RUN curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | apt-key add -
+RUN echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros1-latest.list \
+RUN apt-get update && apt-get install -y \
+    python3-rosbag \
+    python3-pip
+
+# RUN apt-get install -y \
+#     ros-noetic-ros-base \
+#     ros-noetic-rosbag \
+#     && rm -rf /var/lib/apt/lists/*
+
+# # Install ros1_bridge
+# RUN apt-get install -y ros-humble-ros1-bridge
+
+# # Install rosbag2_bag_v2_plugins for reading ROS1 bags in ROS2
+# # This plugin allows reading legacy ROS1 bag files directly in ROS2
+# RUN apt-get install -y ros-humble-rosbag2-bag-v2-plugins
+
+# # Install other useful tools
+# RUN apt-get install -y \
+#     ros-humble-rosbag2 \
+#     ros-humble-rosbag2-transport
+
+WORKDIR /ros2_ws
+
+# Set up entrypoint
+COPY ros1_ros2_entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["bash"]
+
+# Add usage instructions as comments
+# To read ROS1 bags in ROS2:
+# ros2 bag info -s rosbag_v2 /path/to/your/ros1bag.bag
+# ros2 bag play -s rosbag_v2 /path/to/your/ros1bag.bag 
