@@ -1,7 +1,10 @@
 # Start from the ROS2 Foxy base
-FROM osrf/ros:foxy-ros1-bridge AS ros1-ros2-bridge
+FROM osrf/ros:foxy-ros1-bridge AS ros1-ros2-bridge-base
 
 SHELL ["/bin/bash", "-c"]
+
+# Set noninteractive installation
+ENV DEBIAN_FRONTEND=noninteractive
 
 # Install ROS1 Noetic
 RUN apt-get update || true  # proceed despite errors from OSRF key server
@@ -48,26 +51,51 @@ RUN apt-get install -y \
     ros-foxy-rosbag2 \
     ros-foxy-rosbag2-transport
 
+# Create a new stage after the time-consuming apt upgrade
+FROM ros1-ros2-bridge-base AS ros1-ros2-bridge-upgraded
+
+# The time-consuming operation is isolated in this stage
 RUN apt upgrade -y  # Required for fixing ros-foxy-rosbag2-bag-v2-plugins
 
+RUN apt install -y ros-foxy-pcl-ros  # Required for livox_ros_driver2, but hase huge size (can we use runtime only?)
 RUN rm -rf /var/lib/apt/lists/*
+
+# Final stage
+FROM ros1-ros2-bridge-upgraded
 
 WORKDIR /ros2_ws
 
+# RUN apt update && apt install -y libapr1 libapr1-dev
+
 RUN source /opt/ros/foxy/setup.bash
 
-RUN mkdir -p /ros2_ws/livox_ws \
-    && cd /ros2_ws/livox_ws \
-    && git clone https://github.com/Livox-SDK/livox_ros_driver2.git src/livox_ros_driver2 \
-    && cd src/livox_ros_driver2 \
-    && git checkout ros2 \
+# IMPORTANT: Livox-SDK2 exposes a C api and is more recent, while Livox-SDK exposes a C++ api.
+
+RUN mkdir -p /ros2_ws/livox_ws/src \
+    && cd /ros2_ws/livox_ws/src \
+    && git clone https://github.com/Livox-SDK/Livox-SDK2.git \
+    && cd Livox-SDK2 \
+    && git checkout v1.2.5 \
+    && mkdir build \
+    && cd build \
+    && cmake .. \
+    && make -j 10 \
+    && make install
+
+
+RUN cd /ros2_ws/livox_ws/src \
+    && git clone https://github.com/Livox-SDK/livox_ros_driver2.git livox_ros_driver2 \
+    && cd livox_ros_driver2 \
+    && git checkout 1.2.4 \
+    && cp package_ROS2.xml package.xml \
+    && source /opt/ros/foxy/setup.bash \
     && colcon build --packages-select livox_ros_driver2 \
     && source install/setup.bash
 
 # Set up entrypoint
 COPY ros1_ros2_entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
-ENTRYPOINT ["/entrypoint.sh"]
+# ENTRYPOINT ["/entrypoint.sh"]
 CMD ["bash"]
 
 # Add usage instructions as comments
