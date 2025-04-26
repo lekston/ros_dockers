@@ -4,6 +4,7 @@
 docker build -t ros2-dev-gpu-s1 -f Dockerfile_ros_gpu_base .
 docker build -t ros2-dev-gpu-kiss-icp -f Dockerfile_ros_kiss_icp ../..
 docker build -t ros2-dev-gpu-liosam -f Dockerfile_ros_lio_sam .
+docker build -t ros1-ros2-dev -f Dockerfile_ros1_bridge .
 
 # Run the container with X11 forwarding and NVIDIA GPU access
 docker run -it --rm \

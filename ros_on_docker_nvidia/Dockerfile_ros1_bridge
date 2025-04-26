@@ -42,10 +42,6 @@ RUN apt-get install -y \
 # Install ros1_bridge
 RUN apt-get install -y ros-foxy-ros1-bridge
 
-# Install rosbag2_bag_v2_plugins for reading ROS1 bags in ROS2
-# This plugin allows reading legacy ROS1 bag files directly in ROS2
-RUN apt-get install -y ros-foxy-rosbag2-bag-v2-plugins
-
 # Install other useful tools
 RUN apt-get install -y \
     ros-foxy-rosbag2 \
@@ -54,25 +50,31 @@ RUN apt-get install -y \
 # Create a new stage after the time-consuming apt upgrade
 FROM ros1-ros2-bridge-base AS ros1-ros2-bridge-upgraded
 
+# Install rosbag2_bag_v2_plugins for reading ROS1 bags in ROS2
+# This plugin allows reading legacy ROS1 bag files directly in ROS2
+# RUN apt-get install -y ros-foxy-rosbag2-bag-v2-plugins
+# TODO build rosbag2_bag_v2_plugins from source
+
+RUN apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
+RUN apt clean && apt update
+
 # The time-consuming operation is isolated in this stage
 RUN apt upgrade -y  # Required for fixing ros-foxy-rosbag2-bag-v2-plugins
 
-RUN apt install -y ros-foxy-pcl-ros  # Required for livox_ros_driver2, but hase huge size (can we use runtime only?)
+RUN apt install -y ros-foxy-pcl-ros  # Required for livox_ros_driver2 (ROS2) (and is huge in size)
+RUN apt install -y ros-noetic-pcl-ros  # Required for livox_ros_driver2 (ROS1)
+
 RUN rm -rf /var/lib/apt/lists/*
 
-# Final stage
-FROM ros1-ros2-bridge-upgraded
+# Upgraded stage
+FROM ros1-ros2-bridge-upgraded AS ros1-ros2-bridge-final
 
 WORKDIR /ros2_ws
 
-# RUN apt update && apt install -y libapr1 libapr1-dev
-
-RUN source /opt/ros/foxy/setup.bash
-
 # IMPORTANT: Livox-SDK2 exposes a C api and is more recent, while Livox-SDK exposes a C++ api.
 
-RUN mkdir -p /ros2_ws/livox_ws/src \
-    && cd /ros2_ws/livox_ws/src \
+RUN mkdir -p /ros2_ws/src \
+    && cd /ros2_ws/src \
     && git clone https://github.com/Livox-SDK/Livox-SDK2.git \
     && cd Livox-SDK2 \
     && git checkout v1.2.5 \
@@ -82,20 +84,54 @@ RUN mkdir -p /ros2_ws/livox_ws/src \
     && make -j 10 \
     && make install
 
+# Install ROS1 Livox driver
+RUN mkdir -p /ros1_ws/src \
+    && cd /ros1_ws/src \
+    && git clone https://github.com/Livox-SDK/livox_ros_driver2.git \
+    && cd livox_ros_driver2 \
+    && git checkout 1.2.4 \
+    && (source /opt/ros/noetic/setup.bash \
+    && ./build.sh ROS1)
 
-RUN cd /ros2_ws/livox_ws/src \
+# RUN source /ros1_ws/devel/setup.bash
+
+# Install ROS2 Livox driver
+RUN cd /ros2_ws/src \
     && git clone https://github.com/Livox-SDK/livox_ros_driver2.git livox_ros_driver2 \
     && cd livox_ros_driver2 \
     && git checkout 1.2.4 \
-    && cp package_ROS2.xml package.xml \
-    && source /opt/ros/foxy/setup.bash \
-    && colcon build --packages-select livox_ros_driver2 \
-    && source install/setup.bash
+    && (source /opt/ros/foxy/setup.bash \
+    && ./build.sh ROS2)
+
+# RUN colcon build --packages-select livox_ros_driver2 --symlink-install
+
+FROM ros1-ros2-bridge-final
+
+RUN apt update && apt install -y ros-foxy-rosbag2-test-common
+
+RUN rm -rf /var/lib/apt/lists/*
+
+# TODO build rosbag2_bag_v2_plugins from source
+# RUN cd /ros2_ws/merged_ws/src \
+#     && git clone https://github.com/ros2/rosbag2_bag_v2.git \
+#     && cd rosbag2_bag_v2 \
+#     && git checkout foxy \
+#     && cd .. \
+#     && source /opt/ros/noetic/setup.bash \
+#     && source /ros1_ws/devel/setup.bash \
+#     && source /opt/ros/foxy/setup.bash \
+#     && source /ros2_ws/install/setup.bash \
+#     && colcon build --packages-select ros1_rosbag_storage_vendor --merge-install
+#     && colcon build --packages-select rosbag2_bag_v2_plugins --merge-install
+
+# RUN source install/setup.bash
+# RUN source /opt/ros/foxy/setup.bash
+
 
 # Set up entrypoint
 COPY ros1_ros2_entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
-# ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["bash"]
 
 # Add usage instructions as comments

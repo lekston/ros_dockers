@@ -399,12 +399,65 @@ This distributed approach can dramatically improve Gazebo performance while stil
 
 # Converting ROS1 bags to ROS2 bags
 
+Adjust network settings on the host to allow handling large payloads (e.g. Livox LiDARs)
 ```bash
-ros2 bag play -s rosbag_v2 --read-ahead-queue-size 30000 /ros2_ws/data/TIERS/forest01_st_square_2022-02-08-23-14-55.bag
+sudo sysctl -w net.ipv4.ipfrag_time=3
+sudo sysctl -w net.ipv4.ipfrag_high_thresh=134217728
+sudo sysctl -w net.core.rmem_max=2147483647
 ```
 
+
+```bash
+sudo docker run -it --rm \
+   --gpus all \
+   --env="DISPLAY" \
+   --env="QT_X11_NO_MITSHM=1" \
+   --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
+   --volume="`pwd`:/ros2_ws/src_wip" \
+   --volume="/opt/mnt/data/10_slam/:/ros2_ws/data/" \
+   --network=host \
+   --name ros1-ros2-bridge \
+   ros1-ros2-dev
+```
+
+Play:
+```bash
+source /opt/ros/noetic/setup.bash  # ROS1 must be sourced first
+source /opt/ros/foxy/setup.bash
+ros2 bag play -s rosbag_v2 --read-ahead-queue-size 30000 /ros2_ws/data/TIERS/forest01_st_square_2022-02-08-23-14-55.bag
+```
 
 Recording:
 ```bash
 ros2 bag record -a -o /ros2_ws/data/TIERS/forest01_st_square_2022-02-08-ros2
 ```
+
+Test using the latest ROS2 bag player:
+```bash
+ros2 bag play --read-ahead-queue-size 30000 /ros2_ws/data/TIERS/forest01_st_square_2022-02-08-ros2
+```
+
+Play IMU topics only (debug using low RAM)
+```bash
+ros2 bag play -s rosbag_v2 /ros2_ws/data/TIERS/forest01_st_square_2022-02-08-23-14-55.bag --topics /os_cloud_node/imu /livox/imu /avia/livox/imu
+```
+
+Record IMU topics only (debug using low RAM)
+```bash
+ros2 bag record -o /ros2_ws/data/TIERS/forest01_st_square_2022-02-08-ros2-imu /os_cloud_node/imu /livox/imu /avia/livox/imu
+```
+
+# Running Docker Compose
+
+```bash
+docker-compose up -d
+```
+
+```bash
+docker-compose down
+```
+
+```bash
+docker-compose exec ros2-dev bash
+```
+
