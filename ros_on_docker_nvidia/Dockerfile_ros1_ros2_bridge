@@ -50,11 +50,6 @@ RUN apt-get install -y \
 # Create a new stage after the time-consuming apt upgrade
 FROM ros1-ros2-bridge-base AS ros1-ros2-bridge-upgraded
 
-# Install rosbag2_bag_v2_plugins for reading ROS1 bags in ROS2
-# This plugin allows reading legacy ROS1 bag files directly in ROS2
-# RUN apt-get install -y ros-foxy-rosbag2-bag-v2-plugins
-# TODO build rosbag2_bag_v2_plugins from source
-
 RUN apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
 RUN apt clean && apt update
 
@@ -64,10 +59,19 @@ RUN apt upgrade -y  # Required for fixing ros-foxy-rosbag2-bag-v2-plugins
 RUN apt install -y ros-foxy-pcl-ros  # Required for livox_ros_driver2 (ROS2) (and is huge in size)
 RUN apt install -y ros-noetic-pcl-ros  # Required for livox_ros_driver2 (ROS1)
 
+# Install rosbag2_bag_v2_plugins for reading ROS1 bags in ROS2
+# This plugin allows reading legacy ROS1 bag files directly in ROS2
+RUN apt install -y ros-foxy-rosbag2-bag-v2-plugins
+RUN apt install -y ros-noetic-velodyne-msgs ros-foxy-velodyne-msgs
+
+# Build dependencies for rebuildingrosbag2_bag_v2_plugins from source
+RUN apt install -y ros-foxy-rosbag2-test-common
+
 RUN rm -rf /var/lib/apt/lists/*
 
 # Upgraded stage
 FROM ros1-ros2-bridge-upgraded AS ros1-ros2-bridge-final
+
 
 WORKDIR /ros2_ws
 
@@ -93,8 +97,6 @@ RUN mkdir -p /ros1_ws/src \
     && (source /opt/ros/noetic/setup.bash \
     && ./build.sh ROS1)
 
-# RUN source /ros1_ws/devel/setup.bash
-
 # Install ROS2 Livox driver
 RUN cd /ros2_ws/src \
     && git clone https://github.com/Livox-SDK/livox_ros_driver2.git livox_ros_driver2 \
@@ -103,13 +105,7 @@ RUN cd /ros2_ws/src \
     && (source /opt/ros/foxy/setup.bash \
     && ./build.sh ROS2)
 
-# RUN colcon build --packages-select livox_ros_driver2 --symlink-install
-
 FROM ros1-ros2-bridge-final
-
-RUN apt update && apt install -y ros-foxy-rosbag2-test-common
-
-RUN rm -rf /var/lib/apt/lists/*
 
 # TODO build rosbag2_bag_v2_plugins from source
 # RUN cd /ros2_ws/merged_ws/src \
@@ -123,6 +119,8 @@ RUN rm -rf /var/lib/apt/lists/*
 #     && source /ros2_ws/install/setup.bash \
 #     && colcon build --packages-select ros1_rosbag_storage_vendor --merge-install
 #     && colcon build --packages-select rosbag2_bag_v2_plugins --merge-install
+
+# TODO build rosbag2_bag_v2_plugins from source
 
 # RUN source install/setup.bash
 # RUN source /opt/ros/foxy/setup.bash
