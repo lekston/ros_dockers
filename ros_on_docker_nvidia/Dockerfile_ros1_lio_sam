@@ -1,0 +1,114 @@
+# Start from the ROS1 Noetic base image instead of Melodic
+FROM osrf/ros:noetic-desktop-full AS ros1-dev-gpu-liosam-base
+
+# TODO: prepare a GPU enabled container for LIO-SAM on ROS1
+
+SHELL ["/bin/bash", "-c"]
+
+# Set noninteractive installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install development tools and dependencies
+RUN apt-get update && apt-get install -y \
+    vim \
+    tmux \
+    tree \
+    clang \
+    curl \
+    gnupg2 \
+    locales \
+    lsb-release \
+    python3-pip \
+    python3-catkin-tools \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set locale
+RUN locale-gen en_US en_US.UTF-8
+RUN update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+ENV LANG=en_US.UTF-8
+ENV TZ=Etc/UTC
+
+# Create a new stage for upgraded packages
+FROM ros1-dev-gpu-liosam-base AS ros1-dev-gpu-liosam-upgraded
+
+# Update package lists and install GTSAM (required for LIO-SAM)
+RUN apt-get update && \
+    apt-get install -y software-properties-common && \
+    add-apt-repository -y ppa:borglab/gtsam-release-4.0 && \
+    apt-get update && \
+    apt-get install -y libgtsam-dev libgtsam-unstable-dev && \
+    apt-get upgrade -y && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install ROS packages needed for LIO-SAM
+RUN apt-get update && apt-get install -y \
+    ros-noetic-navigation \
+    ros-noetic-robot-localization \
+    ros-noetic-robot-state-publisher \
+    ros-noetic-velodyne-msgs \
+    ros-noetic-pcl-ros \
+    && rm -rf /var/lib/apt/lists/*
+
+# Final stage with LIO-SAM and Livox
+FROM ros1-dev-gpu-liosam-upgraded AS ros1-dev-gpu-liosam-final
+
+# Set up catkin workspace
+WORKDIR /catkin_ws
+
+# Clone and build Livox SDK2
+RUN mkdir -p /livox_sdk \
+    && cd /livox_sdk \
+    && git clone https://github.com/Livox-SDK/Livox-SDK2.git \
+    && cd Livox-SDK2 \
+    && git checkout v1.2.5 \
+    && mkdir build \
+    && cd build \
+    && cmake .. \
+    && make -j 10 \
+    && make install
+
+# Clone, build and install Livox ROS Driver
+RUN mkdir -p /livox_sdk/catkin_ws/src \
+    && cd /livox_sdk/catkin_ws/src \
+    && git clone https://github.com/Livox-SDK/livox_ros_driver2.git \
+    && cd livox_ros_driver2 \
+    && git checkout 1.2.4 \
+    && (source /opt/ros/noetic/setup.bash \
+    && ./build.sh ROS1)
+
+# Clone LIO-SAM and apply the necessary tweaks for Noetic
+RUN mkdir -p /catkin_ws/src \
+    && cd /catkin_ws/src \
+    && git clone https://github.com/TixiaoShan/LIO-SAM.git \
+    && cd LIO-SAM \
+    && git checkout 0be1fbe6275fb8366d5b800af4fc8c76a885c869 \
+    # Replace opencv/cv.h with opencv2/opencv.hpp
+    && sed -i 's/#include <opencv\/cv.h>/#include <opencv2\/opencv.hpp>/g' include/utility.h \
+    # Update C++ standard from C++11 to C++14
+    && sed -i 's/set(CMAKE_CXX_FLAGS "-std=c++11")/set(CMAKE_CXX_FLAGS "-std=c++14")/g' CMakeLists.txt \
+    # Fix FLANN serialization issue by reordering includes (FLANN before OpenCV)
+    && sed -i '/#include <pcl\/kdtree\/kdtree_flann.h>/d' include/utility.h \
+    && sed -i 's/#include <opencv2\/opencv.hpp>/#include <pcl\/kdtree\/kdtree_flann.h>\n\n#include <opencv2\/opencv.hpp>/g' include/utility.h
+
+# NOTE: solution to FLANN serialization issue was adapted from:
+# https://github.com/mariusmuja/flann/issues/214
+
+# Build the catkin workspace
+RUN source /opt/ros/noetic/setup.bash \
+    && source /livox_sdk/catkin_ws/devel/setup.bash \
+    && cd /catkin_ws \
+    && catkin init \
+    && catkin config --extend /opt/ros/noetic \
+    && catkin build --start-with lio_sam
+
+# Source ROS workspace in bashrc
+# RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc \
+#     && echo "source /catkin_make_ws/devel/setup.bash" >> ~/.bashrc
+
+# Setup entrypoint
+COPY ros1_lio_sam_entrypoint.sh /ros_entrypoint.sh
+RUN chmod +x /ros_entrypoint.sh
+
+ENTRYPOINT ["/ros_entrypoint.sh"]
+CMD ["bash"] 
