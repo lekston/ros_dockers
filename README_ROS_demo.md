@@ -461,3 +461,8 @@ docker-compose down
 docker-compose exec ros2-dev bash
 ```
 
+### WIP
+
+ros2 bag record -o /data/LIO_SAM/walking_dataset/ /imu_raw /imu_correct /points_raw /gx5/gps/fix /gx5/nav/odom /gx5/nav/status
+
+ros2 bag play -s rosbag_v2 --read-ahead-queue-size 30000 /data/LIO_SAM/walking_dataset.bag -r 0.5
