@@ -1,6 +1,22 @@
-### Docker run command
+# Docker
+
+## Docker build
+
+*Build base ROS2-GPU image*
 ```bash
-sudo docker run -it --rm     --gpus all     --env="DISPLAY"     --env="QT_X11_NO_MITSHM=1"     --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw"     --volume="`pwd`:/ros2_ws/src_wip"     --volume="/opt/mnt/data/10_slam/:/ros2_ws/data/"     --network=host     --name ros2-dev-liosam     ros2-dev-gpu-liosam
+sudo docker build -t ros2-dev-gpu-s1 -f Dockerfile_ros2_lio_sam .
+```
+
+*Build LIO-SAM image*
+```bash
+sudo docker build -t ros2-dev-liosam -f Dockerfile_ros2_lio_sam .
+```
+
+## Docker runcommand
+
+## run command
+```bash
+sudo docker run -it --rm     --gpus all     --env="DISPLAY"     --env="QT_X11_NO_MITSHM=1"     --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw"     --volume="`pwd`:/root/src_wip"     --volume="/opt/mnt/data/10_slam/:/data/"     --network=host     --name ros2-dev-liosam     ros2-dev-gpu-liosam
 ```
 
 tmux
@@ -24,7 +40,16 @@ ros2 interface show lio_sam/msg/CloudInfo
 ros2 node info /lio_sam_imageProjection
 ros2 node info /lio_sam_featureExtraction
 
+ros2 pkg prefix lio_sam
 
+## Parameters
+
+```bash
+vim /ros2_ws/install/lio_sam/share/lio_sam/config/params.yaml
+```
+
+*Required Update*
+imuTopic: "/imu_correct"
 
 ### LIO-SAM CloudInfo Message
 

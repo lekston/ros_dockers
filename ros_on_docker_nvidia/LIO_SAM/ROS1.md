@@ -1,7 +1,26 @@
-# Docker run command
+# Docker 
 
+## Docker build
+
+*Build LIO-SAM image on ROS1*
+```bash
+sudo docker build -t ros1-dev-liosam -f Dockerfile_ros1_lio_sam .
+```
+
+## Docker run command
+
+NOTES:
+- assuming the following directory structure:
+```bash
+/opt/mnt/data/10_slam/
+├── LIO_SAM
+│   └── walking_dataset.bag
+```
+
+*Run LIO-SAM on ROS1*
+```bash
 sudo docker run -it --rm     --gpus all     --env="DISPLAY"     --env="QT_X11_NO_MITSHM=1"     --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw"     --volume="`pwd`:/root/src_wip"     --volume="/opt/mnt/data/10_slam/:/data/"     --network=host     --name ros1-dev-liosam     ros1-dev-liosam
-
+```
 # Data
 
 ```
@@ -205,4 +224,59 @@ Input topics to first node
 
     pubImuOdometry = create_publisher<nav_msgs::msg::Odometry>(odomTopic, qos_imu);
     pubImuPath = create_publisher<nav_msgs::msg::Path>("lio_sam/imu/path", qos);
+```
+
+# Experiments
+
+## Recording 1
+
+```bash
+rosbag record -o /data/LIO_SAM/walking_dataset_cloud_registered.bag /lio_sam/mapping/cloud_registered /lio_sam/mapping/cloud_registered /odometry/imu /lio_sam/imu/path
+```
+
+*Output*
+```bash
+$ rosrun cpp_pubsub listener /data/LIO_SAM/walking_dataset_cloud_registered_2025-05-02-05-35-35.bag /data/LIO_SAM/session_HDmapping_walking_dataset /cloud_registered:=/lio_sam/mapping/cloud_registered
+...
+[INFO] [1746165112.065840987]: Received message on topic: /lio_sam/mapping/cloud_registered
+[INFO] [1746165112.066110984]: Processing 4359 points
+[INFO] [1746165112.067624115]: Processed 8718 points!
+start loading pc
+loading pc finished
+adding chunk [1]
+adding chunk [2]
+adding chunk [3]
+adding chunk [4]
+adding chunk [5]
+adding chunk [6]
+adding chunk [7]
+reamaining points: 135555
+cleaning points
+points cleaned
+start indexing chunks_trajectory
+number of trajectory elements: 0
+number of trajectory elements: 0
+number of trajectory elements: 0
+number of trajectory elements: 0
+number of trajectory elements: 0
+number of trajectory elements: 0
+number of trajectory elements: 0
+start transforming chunks_pc to local coordinate system
+computing [1] of: 7
+computing [2] of: 7
+computing [3] of: 7
+computing [4] of: 7
+computing [5] of: 7
+computing [6] of: 7
+computing [7] of: 7
+Directory has been created.
+saving file: '"/data/LIO_SAM/session_HDmapping_walking_dataset/session.json"'
+```
+
+### session.json is empyt
+
+## Planned
+
+```bash
+rosbag record -o /data/LIO_SAM/campus_small_dataset_cloud_registered.bag /lio_sam/mapping/cloud_registered /lio_sam/mapping/path /lio_sam/mapping/odometry /odometry/imu /lio_sam/imu/path
 ```
