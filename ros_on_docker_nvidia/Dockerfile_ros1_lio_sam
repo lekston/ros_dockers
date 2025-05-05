@@ -98,7 +98,7 @@ RUN source /opt/ros/noetic/setup.bash \
     && source /livox_sdk/catkin_ws/devel/setup.bash \
     && cd /catkin_ws \
     && catkin init \
-    && catkin config --install \
+    && catkin config --no-instal \
     && catkin build --start-with lio_sam
 
 # Final stage with LIO-SAM and Livox
@@ -108,17 +108,18 @@ RUN apt-get update && apt-get install -y \
     nlohmann-json3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy odometry_subscriber package to the catkin workspace
-COPY ./odometry_subscriber/ /catkin_ws/src/odometry_subscriber/
+# Copy bag2las package to the catkin workspace
+COPY ./bag2las/ /catkin_ws/src/bag2las/
 
-# Rebuild the catkin workspace to include the odometry_subscriber package
+# Rebuild the catkin workspace to include the bag2las package
 RUN source /opt/ros/noetic/setup.bash \
     && source /livox_sdk/catkin_ws/devel/setup.bash \
-    && source /catkin_ws/install/setup.bash \
+    && source /catkin_ws/devel/setup.bash \
     && cd /catkin_ws \
-    && git clone https://github.com/LASzip/LASzip.git ./src/odometry_subscriber/src/3rdparty/LASzip \
-    && cd ./src/odometry_subscriber/src/3rdparty/LASzip \
+    && git clone https://github.com/LASzip/LASzip.git ./src/bag2las/src/3rdparty/LASzip \
+    && cd ./src/bag2las/src/3rdparty/LASzip \
     && git checkout 4aada844e87066533619bcf0abec32ebee7da5d7 \
+    && cd /catkin_ws \
     && catkin build
 
 # NOTE: LASzip 3.4.1 + 2Gb file size fix is required (all is in 3.4.4 too but interface changed)
