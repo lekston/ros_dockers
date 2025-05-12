@@ -108,16 +108,16 @@ RUN apt-get update && apt-get install -y \
     nlohmann-json3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy bag2las package to the catkin workspace
-COPY ./bag2las/ /catkin_ws/src/bag2las/
+# Copy cpp_pubsup package to the catkin workspace (TODO: rename to bag2laz)
+COPY ./cpp_pubsup/ /catkin_ws/src/cpp_pubsup/
 
-# Rebuild the catkin workspace to include the bag2las package
+# Rebuild the catkin workspace to include the cpp_pubsup package
 RUN source /opt/ros/noetic/setup.bash \
     && source /livox_sdk/catkin_ws/devel/setup.bash \
     && source /catkin_ws/devel/setup.bash \
     && cd /catkin_ws \
-    && git clone https://github.com/LASzip/LASzip.git ./src/bag2las/src/3rdparty/LASzip \
-    && cd ./src/bag2las/src/3rdparty/LASzip \
+    && git clone https://github.com/LASzip/LASzip.git ./src/cpp_pubsup/src/3rdparty/LASzip \
+    && cd ./src/cpp_pubsup/src/3rdparty/LASzip \
     && git checkout 4aada844e87066533619bcf0abec32ebee7da5d7 \
     && cd /catkin_ws \
     && catkin build

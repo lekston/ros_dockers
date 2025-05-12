@@ -1,12 +1,14 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(bag2las)
+project(cpp_pubsup)
 
 find_package(catkin QUIET COMPONENTS
   roscpp
 )
 
 if (catkin_FOUND)
-ADD_COMPILE_OPTIONS(-std=c++17 )
+# Add debug flags when in Debug build mode
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0 -Wall -Wextra")
+ADD_COMPILE_OPTIONS(-std=c++17)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -48,7 +50,7 @@ include_directories(
   common
 )
 
-add_executable(listener src/bag2las.cpp)
+add_executable(listener src/cpp_pubsup.cpp)
 
 
 
@@ -65,7 +67,6 @@ add_dependencies(listener ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_
 target_link_libraries(listener
   ${catkin_LIBRARIES} Eigen3::Eigen laszip ${catkin_LIBRARIES}
 )
-
 
 else()
   message("catkin not found so skipping this package")
