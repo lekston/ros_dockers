@@ -1,4 +1,60 @@
-# Docker 
+# Getting started
+
+This section describes how to run LIO-SAM on ROS1 docker on ubuntu 20.04.
+The X11 Display server must be running for the RVIZ to work.
+Additionally, `xhost +local:root` must be run (from the console used to run docker containers) to allow the container to connect to the X server.
+
+## Download LIO-SAM `walking_dataset.bag`
+Download LIO-SAM `walking_dataset.bag` to: `/opt/mnt/data/10_slam/LIO_SAM/`.
+If another path is used the update the volume mapping in the `run_ros1_docker_lio_sam.sh` script.
+
+## Build and run the docker image
+```bash
+cd ./ros_on_docker/ros_on_docker/
+./run_ros1_docker_lio_sam.sh
+```
+
+## Run the LIO-SAM and record the outputs
+Then in the container start tmux and in 4 separate consoles run:
+* Console 1: roscore
+```bash
+source /opt/ros/noetic/setup.bash
+roscore
+```
+
+* Console 2: prepare recording the LIO-SAM:
+```bash
+source /livox_sdk/catkin_ws/devel/setup.bash  # livox_ros_driver2
+source /catkin_ws/devel/setup.bash  # LIO-SAM
+rosbag record -o /data/LIO_SAM/walking_dataset_cloud_registered.bag /lio_sam/mapping/cloud_registered /lio_sam/mapping/cloud_registered /odometry/imu /lio_sam/imu/path
+```
+
+* Console 3: launch the LIO-SAM:
+```bash
+source /livox_sdk/catkin_ws/devel/setup.bash  # livox_ros_driver2
+source /catkin_ws/devel/setup.bash  # LIO-SAM
+roslaunch lio_sam run.launch
+```
+
+* Console 4: replay the LIO-SAM bag:
+```bash
+source /livox_sdk/catkin_ws/devel/setup.bash  # livox_ros_driver2
+source /catkin_ws/devel/setup.bash  # LIO-SAM
+rosbag play /data/LIO_SAM/walking_dataset.bag
+```
+
+## Convert LIO-SAM bag to laz
+Please update the `<date-of-recording>` in the following command with the actual date of the bag file creation.
+
+```bash
+source /livox_sdk/catkin_ws/devel/setup.bash  # livox_ros_driver2
+source /catkin_ws/devel/setup.bash  # LIO-SAM
+
+# need to provide both the bag file and the output directory
+rosrun cpp_pubsub listener /data/LIO_SAM/walking_dataset_cloud_registered_<date-of-recording>.bag /data/LIO_SAM/session_HDmapping
+```
+
+# Docker details
 
 ## Docker build
 

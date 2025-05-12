@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(cpp_pubsup)
+project(cpp_pubsub)
 
 find_package(catkin QUIET COMPONENTS
   roscpp
@@ -50,7 +50,7 @@ include_directories(
   common
 )
 
-add_executable(listener src/cpp_pubsup.cpp)
+add_executable(listener src/cpp_pubsub.cpp)
 
 
 

@@ -50,19 +50,19 @@ source /livox_sdk/catkin_ws/devel/setup.bash  # livox_ros_driver2
 source /catkin_ws/devel/setup.bash  # LIO-SAM
 
 # need to provide both the bag file and the output directory
-rosrun cpp_pubsub listener /data/LIO_SAM/walking_dataset_cloud_registered_2025-05-02-05-35-35.bag /data/LIO_SAM/session_HDmapping /
+rosrun cpp_pubsub listener /data/LIO_SAM/walking_dataset_cloud_registered_2025-05-02-05-35-35.bag /data/LIO_SAM/session_HDmapping
 ```
 
 ## debug
 
 ```bash
-rosrun --prefix 'gdb --args' cpp_pubsup listener /data/LIO_SAM/walking_dataset_cloud_registered_2025-05-02-05-35-35.bag
+rosrun --prefix 'gdb --args' cpp_pubsub listener /data/LIO_SAM/walking_dataset_cloud_registered_2025-05-02-05-35-35.bag
 /data/LIO_SAM/session_HDmapping
 ```
 
 # Progress
 
-- cpp_pubsup converter requires a topic with nav_msgs::Odometry - currently used "/odometry/imu"
+- cpp_pubsub converter requires a topic with nav_msgs::Odometry - currently used "/odometry/imu"
 - planned to use "/lio_sam/mapping/odometry" (required re-doing a recording)
 
 # Related sources

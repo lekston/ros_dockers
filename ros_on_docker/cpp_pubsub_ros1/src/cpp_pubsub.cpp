@@ -328,8 +328,8 @@ int main(int argc, char **argv)
             }
         }
        
-        if (m.getTopic() == "/lio_sam/mapping/odometry") {
-            ROS_INFO("Received message on topic: /lio_sam/mapping/odometry");
+        if (m.getTopic() == "/odometry/imu") {
+            ROS_INFO("Received message on topic: /odometry/imu");
 
             nav_msgs::Odometry::ConstPtr odom_msg = m.instantiate<nav_msgs::Odometry>();
 

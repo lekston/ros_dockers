@@ -108,16 +108,16 @@ RUN apt-get update && apt-get install -y \
     nlohmann-json3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy cpp_pubsup package to the catkin workspace (TODO: rename to bag2laz)
-COPY ./cpp_pubsup/ /catkin_ws/src/cpp_pubsup/
+# Copy cpp_pubsub package to the catkin workspace (TODO: rename to bag2laz)
+COPY ./cpp_pubsub_ros1/ /catkin_ws/src/cpp_pubsub/
 
-# Rebuild the catkin workspace to include the cpp_pubsup package
+# Rebuild the catkin workspace to include the cpp_pubsub package
 RUN source /opt/ros/noetic/setup.bash \
     && source /livox_sdk/catkin_ws/devel/setup.bash \
     && source /catkin_ws/devel/setup.bash \
     && cd /catkin_ws \
-    && git clone https://github.com/LASzip/LASzip.git ./src/cpp_pubsup/src/3rdparty/LASzip \
-    && cd ./src/cpp_pubsup/src/3rdparty/LASzip \
+    && git clone https://github.com/LASzip/LASzip.git ./src/cpp_pubsub/src/3rdparty/LASzip \
+    && cd ./src/cpp_pubsub/src/3rdparty/LASzip \
     && git checkout 4aada844e87066533619bcf0abec32ebee7da5d7 \
     && cd /catkin_ws \
     && catkin build
@@ -129,7 +129,7 @@ RUN source /opt/ros/noetic/setup.bash \
 #     && echo "source /catkin_ws/devel/setup.bash" >> ~/.bashrc
 
 # Setup entrypoint
-COPY ros_on_docker_nvidia/ros1_lio_sam_entrypoint.sh /ros_entrypoint.sh
+COPY ./ros1_lio_sam_entrypoint.sh /ros_entrypoint.sh
 RUN chmod +x /ros_entrypoint.sh
 
 ENTRYPOINT ["/ros_entrypoint.sh"]
