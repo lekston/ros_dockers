@@ -104,6 +104,13 @@ Once inside the container, you can try these ROS2 examples:
    ros2 topic info /turtle1/cmd_vel
    ```
 
+### TF utils
+
+```bash
+rosrun tf view_frames
+rosrun tf tf_monitor
+```
+
 ### Turtle with Lidar Simulation
 
 For a more advanced example with a lidar, use the turtlebot3 simulator:

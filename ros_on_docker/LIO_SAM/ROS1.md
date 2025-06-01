@@ -22,7 +22,7 @@ source /opt/ros/noetic/setup.bash
 roscore
 ```
 
-* Console 2: prepare recording the LIO-SAM:
+* Console 2: prepare to record the outputs of LIO-SAM:
 ```bash
 source /livox_sdk/catkin_ws/devel/setup.bash  # livox_ros_driver2
 source /catkin_ws/devel/setup.bash  # LIO-SAM
@@ -41,6 +41,10 @@ roslaunch lio_sam run.launch
 source /livox_sdk/catkin_ws/devel/setup.bash  # livox_ros_driver2
 source /catkin_ws/devel/setup.bash  # LIO-SAM
 rosbag play /data/LIO_SAM/walking_dataset.bag
+```
+If remapping of topics is needed use:
+```bash
+rosbag play /data/LIO_SAM/walking_dataset.bag /old_topic_name:=/new_topic_name
 ```
 
 ## Convert LIO-SAM bag to laz
@@ -284,7 +288,7 @@ Input topics to first node
 
 # Experiments
 
-## Recording 1
+## Recording 1 (was incomplete due to missing imu topic)
 
 ```bash
 rosbag record -o /data/LIO_SAM/walking_dataset_cloud_registered.bag /lio_sam/mapping/cloud_registered /lio_sam/mapping/cloud_registered /odometry/imu /lio_sam/imu/path
@@ -329,10 +333,134 @@ Directory has been created.
 saving file: '"/data/LIO_SAM/session_HDmapping_walking_dataset/session.json"'
 ```
 
-### session.json is empyt
+*Result*: Conversion to `session.json` failed due to missing imu topic (incorrect remapping).
 
-## Planned
+## Recording 2 (OK)
 
 ```bash
-rosbag record -o /data/LIO_SAM/campus_small_dataset_cloud_registered.bag /lio_sam/mapping/cloud_registered /lio_sam/mapping/path /lio_sam/mapping/odometry /odometry/imu /lio_sam/imu/path
+rosbag record -o /data/LIO_SAM/walking_dataset_cloud_registered.bag /lio_sam/mapping/cloud_registered /lio_sam/mapping/cloud_registered /odometry/imu /lio_sam/imu/path
+```
+
+*Result*: correctly created: `20250506_0153_LIO_SAM_outputs/session.json` for `walking_dataset.bag`.
+
+## Recording 3 (ConSLAM dataset)
+
+*Input data*: `ConSLAM_data/seq1_recording.bag` (source: https://drive.google.com/drive/folders/1ZFSAI-DmhU5XbhveFJgODD9IlSUrq65U)
+
+*Remapping of topics*:
+```bash
+rosbag play /data/ConSLAM_data/seq1_recording.bag --topics imu/data pp_points/synced2rgb /pp_points/synced2rgb:=/points_raw /imu/data:=/imu_raw
+```
+
+* Missing transforms*
+- world to map
+```bash
+rosrun tf2_ros static_transform_publisher 0 0 0 0 0 0 world map &
+```
+- between base_link and IMU (180deg yaw / around yawZ axis in ENU)
+```bash
+rosrun tf2_ros static_transform_publisher 0 0 0 3.1416 0 0 base_link imu_link &
+```
+- between base_link and LiDAR (identity)
+```bash
+rosrun tf2_ros static_transform_publisher 0 0 0 0 0 0 base_link lidar_link &
+```
+
+*Recording command*
+```bash
+rosbag record -o /data/ConSLAM_data/seq1_recording_cloud_registered.bag /lio_sam/mapping/cloud_registered /lio_sam/mapping/path /lio_sam/mapping/odometry /odometry/imu /lio_sam/imu/path
+```
+
+*Observations*:
+- LIO-SAM uses transform definitions from `params.yaml` (not from tf!)
+- params.yaml file is formatted during installation:
+   > pre-installation example is in `ConSLAM_params.yaml`
+   > post-installation requires replacing namespace "/**/ros__parameters:" with "/lio_sam:"
+
+```bash
+roslaunch lio_sam run.launch params_file:=/data/ConSLAM_data/LIO_SAM/ConSLAM_params.yaml
+```
+
+*Result*:
+
+### Details
+
+#### Transforms for ConSLAM dataset (Confirmed):
+    extrinsicRot: [-1.0, 0.0, 0.0,
+                      0.0, -1.0, 0.0,
+                      0.0, 0.0, 1.0] == Rx_180deg @ Ry_180deg == Rz_180deg
+    extrinsicRPY: [-1.0, 0.0, 0.0,
+                   0.0, -1.0, 0.0,
+                   0.0, 0.0, 1.0] == Rz_180deg
+
+*Issues with IMU data*
+- no covariances in IMU messages
+- reversed axes (x,y,z)
+- jumps in time (seq_01 recording is NOT continuous!)
+
+IMU message example:
+```
+---
+header:
+  seq: 27219
+  stamp:
+    secs: 1647338599
+    nsecs: 104913549
+  frame_id: "imu_link"
+orientation:
+  x: -0.01629422977566719
+  y: -0.022902904078364376
+  z: -0.9911065101623535
+  w: -0.13006895780563354
+orientation_covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+angular_velocity:
+  x: -0.1418188214302063
+  y: 0.01865998469293118
+  z: 0.02285167947411537
+angular_velocity_covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+linear_acceleration:
+  x: -0.12156610935926439
+  y: 0.6140567064285278
+  z: 9.877775192260742
+linear_acceleration_covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+```
+
+
+#### Reference IMU from `walking_dataset.bag`:
+Transforms (Note: the Z axis of IMU acc had to be flipped so it is not a right-handed system!):
+    extrinsicRot:    [-1.0,  0.0,  0.0,
+                       0.0,  1.0,  0.0,
+                       0.0,  0.0, -1.0 ] == Ry_180deg
+    extrinsicRPY: [ 0.0,  1.0,  0.0,
+                   -1.0,  0.0,  0.0,
+                    0.0,  0.0,  1.0 ] == Rz_270deg
+
+Definitions:
+  - "extrinsicRot" transforms IMU gyro and acceleometer measurements to lidar frame.
+  - "extrinsicRPY" transforms IMU orientation to lidar frame.
+
+IMU message example:
+```
+header:
+  seq: 272735
+  stamp:
+    secs: 1574367439
+    nsecs: 475170295
+  frame_id: "imu_link"
+orientation:
+  x: -0.07098197937011719
+  y: -0.0364164337515831
+  z: -0.9764178991317749
+  w: 0.20060765743255615
+orientation_covariance: [0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01]
+angular_velocity:
+  x: -0.07487387955188751
+  y: 0.2663656175136566
+  z: 0.39450016617774963
+angular_velocity_covariance: [0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01]
+linear_acceleration:
+  x: 1.4558014538884163
+  y: 0.7472857086360455
+  z: -10.466804870367051
+linear_acceleration_covariance: [0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01]
 ```

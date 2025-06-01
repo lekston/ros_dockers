@@ -19,6 +19,7 @@ find_package(catkin REQUIRED
         rosbag
         livox_ros_driver2
         pcl_ros
+        rospy
 )
 
 find_package(PCL 1.8 REQUIRED)
@@ -52,7 +53,11 @@ include_directories(
 
 add_executable(listener src/cpp_pubsub.cpp)
 
-
+## Mark executable scripts (Python etc.) for installation
+catkin_install_python(PROGRAMS
+  scripts/imu_frame_remapper.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
