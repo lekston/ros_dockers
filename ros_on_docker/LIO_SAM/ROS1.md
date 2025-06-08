@@ -4,17 +4,21 @@ This section describes how to run LIO-SAM on ROS1 docker on ubuntu 20.04.
 The X11 Display server must be running for the RVIZ to work.
 Additionally, `xhost +local:root` must be run (from the console used to run docker containers) to allow the container to connect to the X server.
 
-## Download LIO-SAM `walking_dataset.bag`
-Download LIO-SAM `walking_dataset.bag` to: `/opt/mnt/data/10_slam/LIO_SAM/`.
-If another path is used the update the volume mapping in the `run_ros1_docker_lio_sam.sh` script.
-
 ## Build and run the docker image
 ```bash
 cd ./ros_on_docker/ros_on_docker/
 ./run_ros1_docker_lio_sam.sh
 ```
 
-## Run the LIO-SAM and record the outputs
+## Running the LIO-SAM
+
+### Download example LIO-SAM dataset: `walking_dataset.bag`
+Download LIO-SAM `walking_dataset.bag` from https://drive.google.com/drive/folders/1gJHwfdHCRdjP7vuT556pv8atqrCJPbUq.
+The docker volume mapping assumed `walking_dataset.bag` is in: `/opt/mnt/data/10_slam/LIO_SAM/`.
+If another path is used the update the volume mapping in the `run_ros1_docker_lio_sam.sh` script.
+
+### Run the LIO-SAM and record the outputs
+
 Then in the container start tmux and in 4 separate consoles run:
 * Console 1: roscore
 ```bash
@@ -345,43 +349,47 @@ rosbag record -o /data/LIO_SAM/walking_dataset_cloud_registered.bag /lio_sam/map
 
 ## Recording 3 (ConSLAM dataset)
 
-*Input data*: `ConSLAM_data/seq1_recording.bag` (source: https://drive.google.com/drive/folders/1ZFSAI-DmhU5XbhveFJgODD9IlSUrq65U)
+*Observations*:
+- LIO-SAM uses transform definitions from `params.yaml` (not from tf!)
+  * LIO-SAM inputs assume that LIDAR is in ENU frame, while IMU is body NED frame (but pointing backwards)
+  * LIO-SAM's IMU to LIDAR conversion requires two separate transforms `extrinsicRot` and `extrinsicRPY`
+    - this is to allow support some IMUs (like Microstrain 3DM-GX5-25) which define acceleration and attitude
+      in different coordinate frames.
+    - for IMU used in ConSLAM dataset, both `extrinsicRot` and `extrinsicRPY` are the same (equal to Rz_180deg)
+  * transforms for ConSLAM dataset are provided in `ConSLAM_params.yaml`
+- params.yaml file is formatted during installation:
+   > pre-installation example is in `ConSLAM_params.yaml`
+   > post-installation requires replacing namespace "/**/ros__parameters:" with "/lio_sam:"
+     * example is provided in `ConSLAM_params_local.yaml`
+
+*ConSLAM - IMU data issues*
+- no covariances in IMU messages
+- seq_01 recording is NOT continuous (jumps in time) - it is not suitable for SLAM research
+
+*Input data*: `ConSLAM_data/seq2_recording.bag` (source: https://drive.google.com/drive/folders/1ijZs70JY9BdvobsEh-dvIqa-zsV-heL0)
+Note: all \*.bags available on the source link are poorly named (all are `Copy of recording.bag`) while sequence numbers are represented in the folder names.
 
 *Remapping of topics*:
 ```bash
-rosbag play /data/ConSLAM_data/seq1_recording.bag --topics imu/data pp_points/synced2rgb /pp_points/synced2rgb:=/points_raw /imu/data:=/imu_raw
-```
-
-* Missing transforms*
-- world to map
-```bash
-rosrun tf2_ros static_transform_publisher 0 0 0 0 0 0 world map &
-```
-- between base_link and IMU (180deg yaw / around yawZ axis in ENU)
-```bash
-rosrun tf2_ros static_transform_publisher 0 0 0 3.1416 0 0 base_link imu_link &
-```
-- between base_link and LiDAR (identity)
-```bash
-rosrun tf2_ros static_transform_publisher 0 0 0 0 0 0 base_link lidar_link &
+rosbag play /data/ConSLAM_data/seq2_recording.bag --topics imu/data pp_points/synced2rgb /pp_points/synced2rgb:=/points_raw /imu/data:=/imu_raw
 ```
 
 *Recording command*
 ```bash
-rosbag record -o /data/ConSLAM_data/seq1_recording_cloud_registered.bag /lio_sam/mapping/cloud_registered /lio_sam/mapping/path /lio_sam/mapping/odometry /odometry/imu /lio_sam/imu/path
+rosbag record -o /data/ConSLAM_data/LIO_SAM/seq_02_results.bag /lio_sam/mapping/cloud_registered /lio_sam/mapping/path /lio_sam/mapping/odometry /odometry/imu /lio_sam/imu/path
 ```
 
-*Observations*:
-- LIO-SAM uses transform definitions from `params.yaml` (not from tf!)
-- params.yaml file is formatted during installation:
-   > pre-installation example is in `ConSLAM_params.yaml`
-   > post-installation requires replacing namespace "/**/ros__parameters:" with "/lio_sam:"
-
+*Launch LIO-SAM*
 ```bash
-roslaunch lio_sam run.launch params_file:=/data/ConSLAM_data/LIO_SAM/ConSLAM_params.yaml
+roslaunch lio_sam run.launch params_file:=/data/ConSLAM_data/LIO_SAM/ConSLAM_params_local.yaml
 ```
 
-*Result*:
+*Wait until the bag is finished*
+
+*Convert to laz and save session.json* (HD mapping compatible)
+```bash
+rosrun cpp_pubsub listener /data/ConSLAM_data/LIO_SAM/seq_02_results_<latest_date>.bag /data/ConSLAM_data/LIO_SAM/session_seq_02/
+```
 
 ### Details
 
@@ -392,11 +400,6 @@ roslaunch lio_sam run.launch params_file:=/data/ConSLAM_data/LIO_SAM/ConSLAM_par
     extrinsicRPY: [-1.0, 0.0, 0.0,
                    0.0, -1.0, 0.0,
                    0.0, 0.0, 1.0] == Rz_180deg
-
-*Issues with IMU data*
-- no covariances in IMU messages
-- reversed axes (x,y,z)
-- jumps in time (seq_01 recording is NOT continuous!)
 
 IMU message example:
 ```
@@ -463,4 +466,22 @@ linear_acceleration:
   y: 0.7472857086360455
   z: -10.466804870367051
 linear_acceleration_covariance: [0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01]
+```
+
+# Misc
+
+## Experiments with transform publishers
+
+* Missing transforms*
+- world to map
+```bash
+rosrun tf2_ros static_transform_publisher 0 0 0 0 0 0 world map &
+```
+- between base_link and IMU (180deg yaw / around yawZ axis in ENU)
+```bash
+rosrun tf2_ros static_transform_publisher 0 0 0 3.1416 0 0 base_link imu_link &
+```
+- between base_link and LiDAR (identity)
+```bash
+rosrun tf2_ros static_transform_publisher 0 0 0 0 0 0 base_link lidar_link &
 ```
