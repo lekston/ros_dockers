@@ -1,8 +1,9 @@
 #!/bin/bash
 
+# Minimal privileges Docker run script for ROS1 GPU container
+
 # Build the Docker image if not already built
 docker build -t ros1-dev-gpu-base -f ros_on_docker_nvidia/Dockerfile_ros1_gpu_base .
-docker build -t ros1-dev-gpu-liosam -f ros_on_docker_nvidia/Dockerfile_ros1_gpu_lio_sam .
 
 # Ensure X11 forwarding is allowed
 xhost +local:docker
@@ -26,7 +27,7 @@ docker run -it --rm \
     --ipc="host" \
     --network="host" \
     --name ros1-dev-gpu-container \
-    ros1-dev-gpu-liosam
+    ros1-dev-gpu-base
 
 # Clean up
 xhost -local:docker

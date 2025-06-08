@@ -56,6 +56,12 @@ ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=all
 ENV LIBGL_ALWAYS_INDIRECT=0
 
+# Set X11 and GUI environment variables
+ENV DISPLAY=:0
+ENV QT_X11_NO_MITSHM=1
+ENV XDG_RUNTIME_DIR=/tmp/runtime-root
+ENV DBUS_SESSION_BUS_ADDRESS=unix:path=/tmp/dbus-session
+
 # Source ROS setup in bashrc for interactive shells
 RUN echo "source /opt/ros/noetic/setup.bash" >> /root/.bashrc
 
