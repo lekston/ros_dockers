@@ -50,6 +50,7 @@ If remapping of topics is needed use:
 ```bash
 rosbag play /data/LIO_SAM/walking_dataset.bag /old_topic_name:=/new_topic_name
 ```
+(actual remap used for `campus_small_dataset.bag`: `/imu_correct:=/imu_raw` )
 
 ## Convert LIO-SAM bag to laz
 Please update the `<date-of-recording>` in the following command with the actual date of the bag file creation.

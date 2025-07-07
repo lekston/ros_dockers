@@ -94,46 +94,40 @@ RUN mkdir -p /catkin_ws/src \
     && sed -i 's/#include <opencv\/cv.h>/#include <opencv2\/opencv.hpp>/g' visual_odometry/visual_feature/parameters.h \
     && sed -i 's/#include <opencv\/cv.h>/#include <opencv2\/opencv.hpp>/g' visual_odometry/visual_loop/parameters.h \
     # Fix OpenCV constants for modern OpenCV compatibility
-    # && find . -name "*.cpp" -o -name "*.h" | xargs sed -i 's/CV_RGB2GRAY/cv::COLOR_RGB2GRAY/g' \
-    # && find . -name "*.cpp" -o -name "*.h" | xargs sed -i 's/CV_FONT_HERSHEY_SIMPLEX/cv::FONT_HERSHEY_SIMPLEX/g' \
-    # && find . -name "*.cpp" -o -name "*.h" | xargs sed -i 's/CV_GRAY2RGB/cv::COLOR_GRAY2RGB/g' \
-    # Fix PCL deprecation warning
-    # && sed -i 's/uint16_t, ring, ring/std::uint16_t, ring, ring/g' src/lidar_odometry/imageProjection.cpp \
-    # Fix TF exception warnings (catch by reference instead of value)
-    # && find . -name "*.cpp" -o -name "*.h" | xargs sed -i 's/catch (tf::TransformException ex)/catch (const tf::TransformException\& ex)/g' \
+    && find . -name "*.cpp" -o -name "*.h" | xargs sed -i 's/CV_RGB2GRAY/cv::COLOR_RGB2GRAY/g' \
+    && find . -name "*.cpp" -o -name "*.h" | xargs sed -i 's/CV_FONT_HERSHEY_SIMPLEX/cv::FONT_HERSHEY_SIMPLEX/g' \
+    && find . -name "*.cpp" -o -name "*.h" | xargs sed -i 's/CV_GRAY2RGB/cv::COLOR_GRAY2RGB/g' \
     # Add PCL 1.10 compatibility headers
-    && grep -rli "lvi_sam/cloud_info.h" . | xargs sed -i 's/#include \"lvi_sam\/cloud_info.h\"/#include \"lvi_sam\/cloud_info.h\"\n#include <pcl\/point_types.h>\n#include <pcl/\point_cloud.h>\n#include <pcl\/point_representation.h>/g'
+    && grep -rli "lvi_sam/cloud_info.h" . | xargs sed -i 's/#include \"lvi_sam\/cloud_info.h\"/#include \"lvi_sam\/cloud_info.h\"\n#include <pcl\/point_types.h>\n#include <pcl\/point_cloud.h>\n#include <pcl\/point_representation.h>/g'
 
-# # Build the catkin workspace
-# RUN source /opt/ros/noetic/setup.bash \
-#     && source /livox_sdk/catkin_ws/devel/setup.bash \
-#     && cd /catkin_ws \
-#     && catkin init \
-#     && catkin config --no-install \
-#     && catkin build --start-with lvi_sam
+# Build the catkin workspace
+RUN source /opt/ros/noetic/setup.bash \
+    && source /livox_sdk/catkin_ws/devel/setup.bash \
+    && cd /catkin_ws \
+    && catkin init \
+    && catkin config --no-install \
+    && catkin build --start-with lvi_sam
 
-###############################################################################
-
-# FROM ros1-gpu-lio-sam-final AS ros1-gpu-lio-sam-recording
+FROM ros1-gpu-lvi-sam-final AS ros1-gpu-lvi-sam-recording
 
 # # Install additional dependencies for recording capabilities
-# # RUN apt-get update && apt-get install -y \
-# #     nlohmann-json3-dev \
-# #     && rm -rf /var/lib/apt/lists/*
+# RUN apt-get update && apt-get install -y \
+#     nlohmann-json3-dev \
+#     && rm -rf /var/lib/apt/lists/*
 
-# # Copy cpp_pubsub package to the catkin workspace (TODO: rename to bag2laz)
-# COPY ./ros_on_docker/cpp_pubsub_ros1/ /catkin_ws/src/cpp_pubsub/
+# Copy cpp_pubsub package to the catkin workspace (TODO: rename to bag2laz)
+COPY ./ros_on_docker/cpp_pubsub_ros1/ /catkin_ws/src/cpp_pubsub/
 
-# # Rebuild the catkin workspace to include the cpp_pubsub package
-# RUN source /opt/ros/noetic/setup.bash \
-#     && source /livox_sdk/catkin_ws/devel/setup.bash \
-#     && source /catkin_ws/devel/setup.bash \
-#     && cd /catkin_ws \
-#     && git clone https://github.com/LASzip/LASzip.git ./src/cpp_pubsub/src/3rdparty/LASzip \
-#     && cd ./src/cpp_pubsub/src/3rdparty/LASzip \
-#     && git checkout 4aada844e87066533619bcf0abec32ebee7da5d7 \
-#     && cd /catkin_ws \
-#     && catkin build
+# Rebuild the catkin workspace to include the cpp_pubsub package
+RUN source /opt/ros/noetic/setup.bash \
+    && source /livox_sdk/catkin_ws/devel/setup.bash \
+    && source /catkin_ws/devel/setup.bash \
+    && cd /catkin_ws \
+    && git clone https://github.com/LASzip/LASzip.git ./src/cpp_pubsub/src/3rdparty/LASzip \
+    && cd ./src/cpp_pubsub/src/3rdparty/LASzip \
+    && git checkout 4aada844e87066533619bcf0abec32ebee7da5d7 \
+    && cd /catkin_ws \
+    && catkin build
 
 # Create a workspace directory for user projects
 RUN mkdir -p /catkin_ws/src
