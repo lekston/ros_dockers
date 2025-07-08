@@ -1,4 +1,5 @@
 # GPU-enabled ROS1 Noetic with LIO-SAM - using existing base image
+# NOTE: LIO and LVI have some similar dependencies (GTSAM, Livox SDK, etc.)
 FROM ros1-dev-gpu-base AS ros1-gpu-lio-sam-base
 
 # Install additional dependencies needed for LIO-SAM
@@ -23,6 +24,8 @@ RUN apt-get update && apt-get install -y \
     ros-noetic-robot-state-publisher \
     ros-noetic-velodyne-msgs \
     ros-noetic-pcl-ros \
+    nlohmann-json3-dev \
+    wget \
     && rm -rf /var/lib/apt/lists/*
 
 FROM ros1-gpu-lio-sam-gtsam AS ros1-gpu-lio-sam-livox
@@ -80,9 +83,9 @@ RUN source /opt/ros/noetic/setup.bash \
 FROM ros1-gpu-lio-sam-final AS ros1-gpu-lio-sam-recording
 
 # Install additional dependencies for recording capabilities
-RUN apt-get update && apt-get install -y \
-    nlohmann-json3-dev \
-    && rm -rf /var/lib/apt/lists/*
+# RUN apt-get update && apt-get install -y \
+#     nlohmann-json3-dev \
+#     && rm -rf /var/lib/apt/lists/*
 
 # Copy cpp_pubsub package to the catkin workspace (TODO: rename to bag2laz)
 COPY ./ros_on_docker/cpp_pubsub_ros1/ /catkin_ws/src/cpp_pubsub/
