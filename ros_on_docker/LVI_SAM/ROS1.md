@@ -15,7 +15,7 @@ $ ros_on_docker/ros_on_docker_nvidia/run_ros1_docker_gpu_lvi_sam.sh
 
 Console 1:
 ```
-rosrun lvi_sam run.launch
+roslaunch lvi_sam run.launch
 ```
 
 Console 2:
@@ -38,6 +38,7 @@ $ rosnode list
 /lvi_sam_visual_odometry
 /play_1751947983836050462
 ```
+See launch details in `./src/LVI-SAM/launch/include/module_sam.launch`
 
 # Topics:
 ```
@@ -195,4 +196,180 @@ Publishers:
  * /lvi_sam_visual_odometry
 
 Subscribers: None
+```
+
+## Parameters
+
+```
+# rosparam list
+/PROJECT_NAME
+/lvi_sam/Horizon_SCAN
+/lvi_sam/N_SCAN
+/lvi_sam/downsampleRate
+/lvi_sam/edgeFeatureMinValidNum
+/lvi_sam/edgeThreshold
+/lvi_sam/extrinsicRPY
+/lvi_sam/extrinsicRot
+/lvi_sam/extrinsicTrans
+/lvi_sam/globalMapVisualizationLeafSize
+/lvi_sam/globalMapVisualizationPoseDensity
+/lvi_sam/globalMapVisualizationSearchRadius
+/lvi_sam/historyKeyframeFitnessScore
+/lvi_sam/historyKeyframeSearchNum
+/lvi_sam/historyKeyframeSearchRadius
+/lvi_sam/historyKeyframeSearchTimeDiff
+/lvi_sam/imuAccBiasN
+/lvi_sam/imuAccNoise
+/lvi_sam/imuGravity
+/lvi_sam/imuGyrBiasN
+/lvi_sam/imuGyrNoise
+/lvi_sam/imuTopic
+/lvi_sam/loopClosureEnableFlag
+/lvi_sam/mappingCornerLeafSize
+/lvi_sam/mappingProcessInterval
+/lvi_sam/mappingSurfLeafSize
+/lvi_sam/numberOfCores
+/lvi_sam/odometrySurfLeafSize
+/lvi_sam/pointCloudTopic
+/lvi_sam/rotation_tollerance
+/lvi_sam/savePCD
+/lvi_sam/savePCDDirectory
+/lvi_sam/surfFeatureMinValidNum
+/lvi_sam/surfThreshold
+/lvi_sam/surroundingKeyframeDensity
+/lvi_sam/surroundingKeyframeSearchRadius
+/lvi_sam/surroundingKeyframeSize
+/lvi_sam/surroundingkeyframeAddingAngleThreshold
+/lvi_sam/surroundingkeyframeAddingDistThreshold
+/lvi_sam/timeField
+/lvi_sam/useImuHeadingInitialization
+/lvi_sam/z_tollerance
+/lvi_sam_republish/compressed/mode
+/robot_description
+/rosdistro
+/roslaunch/uris/host_przemek_ai__41459
+/roslaunch/uris/host_przemek_ai__46253
+/rosversion
+/run_id
+/vins_config_file  <-- "/catkin_ws/src/LVI-SAM/config/params_camera.yaml"
+```
+
+## Transforms
+
+Original 'garden.bag' dataset uses the following transforms:
+- in `params_lidar.yaml` (identical as for LIO-SAM, see: `../LIO_SAM/ROS1.md` for more details):
+```
+  extrinsicRot: [-1, 0, 0, 0, 1, 0, 0, 0, -1]  # Ry_180deg (pitch 180deg)
+  extrinsicRPY: [0, 1, 0, -1, 0, 0, 0, 0, 1]   # Rz_270deg (yaw 270deg)
+```
+- in `params_camera.yaml`:
+```
+  # TODO TODO TODO <- revisit this transform
+  data: [ 0, 0, -1,
+         -1, 0, 0,
+          0, 1, 0]  # Ry_270deg (pitch -90deg) @ Rz_270deg (yaw -90deg)
+```
+
+As for rotation from camera to IMU so far I tried:
+- Rz(np.radians(-90)) @ Ry(np.radians(-90))
+- Rz(np.radians(90)) @ Ry(np.radians(90)) (inverted order) - VINS does not report errors, but VIO and LIO are not in sync
+
+*Original camera calibration*:
+```
+# camera model
+model_type: MEI
+camera_name: camera
+
+# Mono camera config
+image_width: 720
+image_height: 540
+mirror_parameters:
+   xi: 1.9926618269451453
+distortion_parameters:
+   k1: -0.0399258932468764
+   k2: 0.15160828121223818
+   p1: 0.00017756967825777937
+   p2: -0.0011531239076798612
+projection_parameters:
+   gamma1: 669.8940458885896
+   gamma2: 669.1450614220616
+   u0: 377.9459252967363
+   v0: 279.63655686698144
+# fisheye_mask: "/config/fisheye_mask_720x540.jpg"
+```
+
+
+Updates in `params_lidar.yaml` for ConSLAM dataset
+```
+  # Topics
+  pointCloudTopic: "/points_raw"  # Point cloud data
+  imuTopic: "/imu_raw"  # OR "/imu/data" if remapped
+```
+
+```
+    extrinsicRot: [-1.0, 0.0, 0.0,
+                      0.0, -1.0, 0.0,
+                      0.0, 0.0, 1.0] == Rx_180deg @ Ry_180deg == Rz_180deg
+    extrinsicRPY: [-1.0, 0.0, 0.0,
+                   0.0, -1.0, 0.0,
+                   0.0, 0.0, 1.0] == Rz_180deg
+```
+
+Updates in `params_camera.yaml`:
+```
+  imuTopic: "/imu_raw" # OR "/imu/data" if remapped
+```
+
+*Updated camera calibration* (using `/data/ConSLAM_data/data_calib/data_calib/calib_rgb.yaml`)
+
+```
+cp /data/fisheye_mask_2064x1544.jpg src/LVI-SAM/config/
+```
+
+```
+# camera model
+model_type: MEI
+camera_name: camera
+
+# Mono camera config
+image_width: 2064
+image_height: 1544
+mirror_parameters:
+   xi: 1.9926618269451453
+distortion_parameters: # TODO
+   k1: -0.0399258932468764
+   k2: 0.15160828121223818
+   p1: 0.00017756967825777937
+   p2: -0.0011531239076798612
+projection_parameters:
+   gamma1: 2351.85909
+   gamma2: 2353.56734
+   u0: 1017.24032
+   v0: 788.70774
+fisheye_mask: "/config/fisheye_mask_2064x1544.jpg"
+```
+
+
+*Remaping of topics*:
+```bash
+rosbag play /data/ConSLAM_data/sequence_02.bag --topics imu/data pp_points/synced2rgb pp_rgb/synced2points /pp_points/synced2rgb:=/points_raw /imu/data:=/imu_raw /pp_rgb/synced2points:=/camera/image_raw
+```
+
+Header of /pp_rgb/synced2points:
+```
+$ rostopic echo /camera/image_raw --noarr
+```
+```
+header: 
+  seq: 3249
+  stamp: 
+    secs: 1650963684
+    nsecs: 982393331
+  frame_id: "pp_rgb"
+height: 1544
+width: 2064
+encoding: "rgb8"
+is_bigendian: 0
+step: 6192
+data: "<array type: uint8, length: 9560448>"
 ```

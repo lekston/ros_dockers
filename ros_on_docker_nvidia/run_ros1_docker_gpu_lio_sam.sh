@@ -25,7 +25,7 @@ docker run -it --rm \
     --group-add="render" \
     --ipc="host" \
     --network="host" \
-    --name ros1-dev-gpu-container \
+    --name ros1-dev-gpu-liosam \
     ros1-dev-gpu-liosam
 
 # Clean up
