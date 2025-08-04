@@ -396,12 +396,24 @@ Update for `params_camera.yaml`:
           0, 1, 0]  # [NED] Ry_90deg (pitch 90deg) @ Rz_90deg (yaw 90deg)
 ```
 
-Consider:
+Autocalibration (estimate_extrinsic: 2) produces:
+```
+   0.197369   0.0115071   -0.980262
+    0.97976   0.0317422    0.197641
+  0.0333899    -0.99943 -0.00500922
+```
+
+Considering:
+L2Imu @ L2Cam.T =
+[ 0,  0, -1,
+  1,  0,  0,
+  0, -1,  0]   # [NED] Ry_270deg @ Rz_90deg @ Rz_180deg
+
+Discarted:
 L2Cam @ L2Imu.T =
 [ 0,  1,  0,
   0,  0, -1,
  -1,  0,  0]   # [NED] Ry_90deg @ Rz_90deg @ Rz_180deg
-
 
 *Remaping of topics*:
 ```bash

@@ -58,10 +58,10 @@ extrinsicRotation: !!opencv-matrix
    rows: 3
    cols: 3
    dt: d
-   # ConSLAM
-   data: [ 0,  1,  0,
-           0,  0, -1,
-          -1,  0,  0]
+   # ConSLAM (L2Imu @ L2Cam.T)
+   data: [ 0,  0, -1,
+           1,  0,  0,
+           0, -1,  0]
    # Original (garden.bag)
    # data: [ 0, 0, -1,
    #        -1, 0, 0,
