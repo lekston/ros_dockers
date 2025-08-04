@@ -367,12 +367,12 @@ rosbag record -o /data/LIO_SAM/walking_dataset_cloud_registered.bag /lio_sam/map
 - no covariances in IMU messages
 - seq_01 recording is NOT continuous (jumps in time) - it is not suitable for SLAM research
 
-*Input data*: `ConSLAM_data/seq2_recording.bag` (source: https://drive.google.com/drive/folders/1ijZs70JY9BdvobsEh-dvIqa-zsV-heL0)
+*Input data*: `ConSLAM_data/sequence_02.bag` (source: https://drive.google.com/drive/folders/1ijZs70JY9BdvobsEh-dvIqa-zsV-heL0)
 Note: all \*.bags available on the source link are poorly named (all are `Copy of recording.bag`) while sequence numbers are represented in the folder names.
 
 *Remapping of topics*:
 ```bash
-rosbag play /data/ConSLAM_data/seq2_recording.bag --topics imu/data pp_points/synced2rgb /pp_points/synced2rgb:=/points_raw /imu/data:=/imu_raw
+rosbag play /data/ConSLAM_data/sequence_02.bag --topics imu/data pp_points/synced2rgb /pp_points/synced2rgb:=/points_raw /imu/data:=/imu_raw
 ```
 
 *Recording command*
@@ -381,6 +381,13 @@ rosbag record -o /data/ConSLAM_data/LIO_SAM/seq_02_results.bag /lio_sam/mapping/
 ```
 
 *Launch LIO-SAM*
+The `params_file` arg seems to be ignored so please run:
+```bash
+cp /data/ConSLAM_data/LIO_SAM/ConSLAM_params_local.yaml /catkin_ws/src/LIO-SAM/config/params.yaml
+roslaunch lio_sam run.launch
+```
+
+FIXME: below should but does not work - why?
 ```bash
 roslaunch lio_sam run.launch params_file:=/data/ConSLAM_data/LIO_SAM/ConSLAM_params_local.yaml
 ```
