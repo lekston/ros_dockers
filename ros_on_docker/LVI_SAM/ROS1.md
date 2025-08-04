@@ -376,7 +376,7 @@ lidar-to-rgb (L2Cam)
   0,  0, -1,
   1,  0,  0]   # [NED] Ry_270deg (pitch -90deg) @ Rz_90deg (yaw 90deg)
 
-*ConSLAM LIDAR-to-IMU transform*
+*ConSLAM LIDAR-to-IMU rotation*
 ```
   -0.999512  -0.0311334 -0.00249871
   0.0311862     -0.9992  -0.0250271
@@ -396,24 +396,26 @@ Update for `params_camera.yaml`:
           0, 1, 0]  # [NED] Ry_90deg (pitch 90deg) @ Rz_90deg (yaw 90deg)
 ```
 
-Autocalibration (estimate_extrinsic: 2) produces:
+VINS autocalibration (estimate_extrinsic: 2) produces:
 ```
    0.197369   0.0115071   -0.980262
     0.97976   0.0317422    0.197641
   0.0333899    -0.99943 -0.00500922
 ```
 
-Considering:
+Considering <- WORKS with `estimate_extrinsic: 1` and `estimate_td: 1`
 L2Imu @ L2Cam.T =
 [ 0,  0, -1,
   1,  0,  0,
   0, -1,  0]   # [NED] Ry_270deg @ Rz_90deg @ Rz_180deg
+
 
 Discarted:
 L2Cam @ L2Imu.T =
 [ 0,  1,  0,
   0,  0, -1,
  -1,  0,  0]   # [NED] Ry_90deg @ Rz_90deg @ Rz_180deg
+
 
 *Remaping of topics*:
 ```bash
@@ -438,3 +440,11 @@ is_bigendian: 0
 step: 6192
 data: "<array type: uint8, length: 9560448>"
 ```
+
+## Outcome of ConSLAM sequence 02:
+VINS becomes lost in the very dark corrido (about 70% into the recording) and it breaks the entire solution.
+
+NOTE: restart at 250/420 sec or earlier to allow for some map building before entering the dark corridor.
+
+TODO: investigate if that cammera had rolling shutter
+TODO: VINS calculates a large X offest between camera and IMU (between -1.4m and -2.3m) -> this is likely to be due to incorrect camera calibraiton.
