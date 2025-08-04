@@ -299,6 +299,21 @@ projection_parameters:
 ```
 
 
+
+# Experiments on "ConSLAM" dataset
+
+Console 1:
+```
+cp /data/ConSLAM_data/LVI_SAM/ConSLAM_lidar_params_local.yaml /catkin_ws/src/LVI-SAM/config/params_lidar.yaml
+roslaunch lvi_sam run.launch
+```
+
+Console 2 (with topic remap):
+```
+rosbag play /data/ConSLAM_data/sequence_02.bag --topics imu/data pp_points/synced2rgb pp_rgb/synced2points /pp_points/synced2rgb:=/points_raw /imu/data:=/imu_raw /pp_rgb/synced2points:=/camera/image_raw
+```
+
+
 Updates in `params_lidar.yaml` for ConSLAM dataset
 ```
   # Topics
@@ -323,7 +338,7 @@ Updates in `params_camera.yaml`:
 *Updated camera calibration* (using `/data/ConSLAM_data/data_calib/data_calib/calib_rgb.yaml`)
 
 ```
-cp /data/fisheye_mask_2064x1544.jpg src/LVI-SAM/config/
+cp /data/LVI_SAM/fisheye_mask_2064x1544.jpg src/LVI-SAM/config/
 ```
 
 ```
@@ -334,13 +349,13 @@ camera_name: camera
 # Mono camera config
 image_width: 2064
 image_height: 1544
-mirror_parameters:
+mirror_parameters:  # TODO: what is this? (check in VINS-Mono)
    xi: 1.9926618269451453
-distortion_parameters: # TODO
-   k1: -0.0399258932468764
-   k2: 0.15160828121223818
-   p1: 0.00017756967825777937
-   p2: -0.0011531239076798612
+distortion_parameters:
+   k1: -0.054366
+   k2: 0.118389
+   p1: 0.001781
+   p2: -0.003908
 projection_parameters:
    gamma1: 2351.85909
    gamma2: 2353.56734
@@ -348,6 +363,44 @@ projection_parameters:
    v0: 788.70774
 fisheye_mask: "/config/fisheye_mask_2064x1544.jpg"
 ```
+
+*ConSLAM LIDAR-to-RGB transform*
+```
+0.05758374, -0.99833897, -0.00184651, -0.0081025,
+-0.0017837,   0.0017467,  -0.99999688, -0.0631593,
+0.99833909,  0.05758685, -0.00168015, -0.0215235,
+0.0, 0.0, 0.0, 1.0
+```
+lidar-to-rgb (L2Cam)
+[ 0, -1,  0,
+  0,  0, -1,
+  1,  0,  0]   # [NED] Ry_270deg (pitch -90deg) @ Rz_90deg (yaw 90deg)
+
+*ConSLAM LIDAR-to-IMU transform*
+```
+  -0.999512  -0.0311334 -0.00249871
+  0.0311862     -0.9992  -0.0250271
+-0.00171754  -0.0250928    0.999684
+```
+lidar-to-imu (L2Imu == L2Imu.T)
+[-1,  0,  0,
+  0, -1,  0,
+  0,  0,  1]
+
+
+Update for `params_camera.yaml`:
+```
+  # TODO TODO TODO <- revisit this transform
+  data: [ 0, 0, -1,
+         -1, 0, 0,
+          0, 1, 0]  # [NED] Ry_90deg (pitch 90deg) @ Rz_90deg (yaw 90deg)
+```
+
+Consider:
+L2Cam @ L2Imu.T =
+[ 0,  1,  0,
+  0,  0, -1,
+ -1,  0,  0]   # [NED] Ry_90deg @ Rz_90deg @ Rz_180deg
 
 
 *Remaping of topics*:
