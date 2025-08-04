@@ -476,6 +476,14 @@ linear_acceleration:
 linear_acceleration_covariance: [0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01]
 ```
 
+# TODO
+
+## LIO-SAM continuously shows TF warnings
+```
+[WARN] [...]: TF to MSG: Quaternion Not Properly Normalized
+```
+Despite this warning the algorithm seems to be very stable and provides a smooth trajectory with valid loop-closures.
+
 # Misc
 
 ## Experiments with transform publishers
