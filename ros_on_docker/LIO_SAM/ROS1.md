@@ -348,6 +348,45 @@ rosbag record -o /data/LIO_SAM/walking_dataset_cloud_registered.bag /lio_sam/map
 
 *Result*: correctly created: `20250506_0153_LIO_SAM_outputs/session.json` for `walking_dataset.bag`.
 
+#### Reference IMU from `walking_dataset.bag`:
+Transforms (Note: the Z axis of IMU acc had to be flipped so it is not a right-handed system!):
+    extrinsicRot:    [-1.0,  0.0,  0.0,
+                       0.0,  1.0,  0.0,
+                       0.0,  0.0, -1.0 ] == Ry_180deg
+    extrinsicRPY: [ 0.0,  1.0,  0.0,
+                   -1.0,  0.0,  0.0,
+                    0.0,  0.0,  1.0 ] == Rz_270deg
+
+Definitions:
+  - "extrinsicRot" transforms IMU gyro and acceleometer measurements to lidar frame.
+  - "extrinsicRPY" transforms IMU orientation to lidar frame.
+
+IMU message example:
+```
+header:
+  seq: 272735
+  stamp:
+    secs: 1574367439
+    nsecs: 475170295
+  frame_id: "imu_link"
+orientation:
+  x: -0.07098197937011719
+  y: -0.0364164337515831
+  z: -0.9764178991317749
+  w: 0.20060765743255615
+orientation_covariance: [0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01]
+angular_velocity:
+  x: -0.07487387955188751
+  y: 0.2663656175136566
+  z: 0.39450016617774963
+angular_velocity_covariance: [0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01]
+linear_acceleration:
+  x: 1.4558014538884163
+  y: 0.7472857086360455
+  z: -10.466804870367051
+linear_acceleration_covariance: [0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01]
+```
+
 ## Recording 3 (ConSLAM dataset)
 
 *Observations*:
@@ -436,45 +475,61 @@ linear_acceleration:
 linear_acceleration_covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 ```
 
+## Recording 4 (NTU Viral)
 
-#### Reference IMU from `walking_dataset.bag`:
-Transforms (Note: the Z axis of IMU acc had to be flipped so it is not a right-handed system!):
-    extrinsicRot:    [-1.0,  0.0,  0.0,
-                       0.0,  1.0,  0.0,
-                       0.0,  0.0, -1.0 ] == Ry_180deg
-    extrinsicRPY: [ 0.0,  1.0,  0.0,
-                   -1.0,  0.0,  0.0,
-                    0.0,  0.0,  1.0 ] == Rz_270deg
+Input data*: `NTU_Viral_dataset/eee_03/eee_03.bag` (source: https://researchdata.ntu.edu.sg/api/access/datafile/68132)
+Note: all \*.bags are available here: https://ntu-aris.github.io/ntu_viral_dataset/
 
-Definitions:
-  - "extrinsicRot" transforms IMU gyro and acceleometer measurements to lidar frame.
-  - "extrinsicRPY" transforms IMU orientation to lidar frame.
+Note: in `sbs_01.bag` IMU has a large driff while on the ground
 
-IMU message example:
+*Remapping of topics*:
+```bash
+rosbag play /data/NTU_Viral_dataset/eee_03/eee_03.bag --topics /imu/imu /os1_cloud_node1/points /os1_cloud_node1/points:=/points_raw /imu/imu:=/imu_raw
 ```
-header:
-  seq: 272735
-  stamp:
-    secs: 1574367439
-    nsecs: 475170295
-  frame_id: "imu_link"
-orientation:
-  x: -0.07098197937011719
-  y: -0.0364164337515831
-  z: -0.9764178991317749
-  w: 0.20060765743255615
-orientation_covariance: [0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01]
-angular_velocity:
-  x: -0.07487387955188751
-  y: 0.2663656175136566
-  z: 0.39450016617774963
-angular_velocity_covariance: [0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01]
-linear_acceleration:
-  x: 1.4558014538884163
-  y: 0.7472857086360455
-  z: -10.466804870367051
-linear_acceleration_covariance: [0.01, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.01]
+
+NOTE: `/imu/imu:/imu_raw` has to be done by using the `imu_frame_remapper.py` which rotates the IMU to ENU from NED.
+
+```bash
+python3 /data/bin/imu_frame_remapper.py
 ```
+
+*Recording command*
+```bash
+rosbag record -o /data/NTU_Viral_dataset/eee_03/LIO_SAM/eee_03_results.bag /lio_sam/mapping/cloud_registered /lio_sam/mapping/path /lio_sam/mapping/odometry /odometry/imu /lio_sam/imu/path
+```
+
+*Launch LIO-SAM*
+The `params_file` arg seems to be ignored so please run:
+```bash
+cp /data/NTU_Viral_dataset/LIO_SAM/NTU_viral_params_local.yaml /catkin_ws/src/LIO-SAM/config/params.yaml
+roslaunch lio_sam run.launch
+```
+
+*Wait until the bag is finished*
+
+*Convert to laz and save session.json* (HD mapping compatible)
+```bash
+rosrun cpp_pubsub listener /data/NTU_Viral_dataset/LIO_SAM/eee_03_results_<latest_date>.bag /data/NTU_Viral_dataset/LIO_SAM/eee_03/
+```
+
+#### Fix map and odom (display only)
+Apply rotation: roll_180deg
+IMPORTANT: originals are still published upside-down
+
+```
+rosrun tf2_ros static_transform_publisher 0 0 0 0 0 3.1416 odom_upsidedown odom &
+rosrun tf2_ros static_transform_publisher 0 0 0 0 0 3.1416 map_upsidedown map &
+```
+
+#### Transforms for NTU Viral dataset:
+    extrinsicRot: [1.0, 0.0, 0.0,
+                      0.0, 1.0, 0.0,
+                      0.0, 0.0, 1.0]
+    extrinsicRPY: [1.0, 0.0, 0.0,
+                   0.0, 1.0, 0.0,
+                   0.0, 0.0, 1.0]
+    extrinsicTrans: [-0.05, 0.0, 0.055]  # OR the same * -1
+
 
 # TODO
 
