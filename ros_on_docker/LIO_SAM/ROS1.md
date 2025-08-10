@@ -477,17 +477,21 @@ linear_acceleration_covariance: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
 ## Recording 4 (NTU Viral)
 
-Input data*: `NTU_Viral_dataset/eee_03/eee_03.bag` (source: https://researchdata.ntu.edu.sg/api/access/datafile/68132)
+*Input data*:
+- `NTU_Viral_dataset/eee_01/eee_01.bag` (source: https://researchdata.ntu.edu.sg/api/access/datafile/68133)
+- `NTU_Viral_dataset/eee_02/eee_02.bag` (source: https://researchdata.ntu.edu.sg/api/access/datafile/68131)
+- `NTU_Viral_dataset/eee_03/eee_03.bag` (source: https://researchdata.ntu.edu.sg/api/access/datafile/68132)
+
 Note: all \*.bags are available here: https://ntu-aris.github.io/ntu_viral_dataset/
 
 Note: in `sbs_01.bag` IMU has a large driff while on the ground
 
 *Remapping of topics*:
 ```bash
-rosbag play /data/NTU_Viral_dataset/eee_03/eee_03.bag --topics /imu/imu /os1_cloud_node1/points /os1_cloud_node1/points:=/points_raw /imu/imu:=/imu_raw
+rosbag play /data/NTU_Viral_dataset/eee_01/eee_01.bag --topics /imu/imu /os1_cloud_node1/points /os1_cloud_node1/points:=/points_raw
 ```
-
-NOTE: `/imu/imu:/imu_raw` has to be done by using the `imu_frame_remapper.py` which rotates the IMU to ENU from NED.
+NOTE: `/imu/imu:=/imu_raw` is not remapped directly as NTU viral uses NED convetion (while LIO-SAM requires ENU input)
+Hence, the `imu_frame_remapper.py` is used to rotate the IMU to ENU from NED.
 
 ```bash
 python3 /data/bin/imu_frame_remapper.py
@@ -495,7 +499,7 @@ python3 /data/bin/imu_frame_remapper.py
 
 *Recording command*
 ```bash
-rosbag record -o /data/NTU_Viral_dataset/eee_03/LIO_SAM/eee_03_results.bag /lio_sam/mapping/cloud_registered /lio_sam/mapping/path /lio_sam/mapping/odometry /odometry/imu /lio_sam/imu/path
+rosbag record -o /data/NTU_Viral_dataset/LIO_SAM/eee_01_results.bag /lio_sam/mapping/cloud_registered /lio_sam/mapping/path /lio_sam/mapping/odometry /odometry/imu /lio_sam/imu/path
 ```
 
 *Launch LIO-SAM*
@@ -509,7 +513,7 @@ roslaunch lio_sam run.launch
 
 *Convert to laz and save session.json* (HD mapping compatible)
 ```bash
-rosrun cpp_pubsub listener /data/NTU_Viral_dataset/LIO_SAM/eee_03_results_<latest_date>.bag /data/NTU_Viral_dataset/LIO_SAM/eee_03/
+rosrun cpp_pubsub listener /data/NTU_Viral_dataset/LIO_SAM/eee_01_results_<latest_date>.bag /data/NTU_Viral_dataset/LIO_SAM/eee_01/
 ```
 
 #### Fix map and odom (display only)
@@ -523,8 +527,8 @@ rosrun tf2_ros static_transform_publisher 0 0 0 0 0 3.1416 map_upsidedown map &
 
 #### Transforms for NTU Viral dataset:
     extrinsicRot: [1.0, 0.0, 0.0,
-                      0.0, 1.0, 0.0,
-                      0.0, 0.0, 1.0]
+                   0.0, 1.0, 0.0,
+                   0.0, 0.0, 1.0]
     extrinsicRPY: [1.0, 0.0, 0.0,
                    0.0, 1.0, 0.0,
                    0.0, 0.0, 1.0]
