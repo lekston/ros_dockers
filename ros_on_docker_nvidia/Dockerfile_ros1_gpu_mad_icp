@@ -1,0 +1,127 @@
+# GPU-enabled ROS1 Noetic with LIO-SAM - using existing base image
+# NOTE: LIO and LVI have some similar dependencies (GTSAM, Livox SDK, etc.)
+FROM ros1-dev-gpu-base AS ros1-gpu-lio-sam-base
+
+# Install additional dependencies needed for LIO-SAM
+RUN apt-get update && apt-get install -y \
+    software-properties-common \
+    && rm -rf /var/lib/apt/lists/*
+
+FROM ros1-gpu-lio-sam-base AS ros1-gpu-mad-icp-base
+
+# Install ROS packages needed for python3.9+ andMAD-ICP
+RUN apt-get update && apt-get install -y \
+    curl \
+    libbz2-dev \
+    libffi-dev \
+    liblzma-dev \
+    libncursesw5-dev \
+    libreadline-dev \
+    libsqlite3-dev \
+    libssl-dev \
+    libxml2-dev \
+    libxmlsec1-dev \
+    make \
+    nlohmann-json3-dev \
+    pybind11-dev \
+    ros-noetic-navigation \
+    ros-noetic-robot-localization \
+    ros-noetic-robot-state-publisher \
+    ros-noetic-velodyne-msgs \
+    ros-noetic-pcl-ros \
+    tk-dev \
+    unzip \
+    wget \
+    xz-utils \
+    zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install python3.9+
+RUN cd /root \
+    && git clone https://github.com/pyenv/pyenv.git ~/.pyenv \
+    && echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc \
+    && echo '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc \
+    && echo 'eval "$(pyenv init - bash)"' >> ~/.bashrc \
+    && echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.profile \
+    && echo '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.profile \
+    && echo 'eval "$(pyenv init - bash)"' >> ~/.profile
+
+# Install python3.10
+RUN export PYENV_ROOT="$HOME/.pyenv" \
+    && export PATH="$PYENV_ROOT/bin:$PATH" \
+    && eval "$(pyenv init - bash)" \
+    && pyenv install 3.10 \
+    && pyenv global 3.10 \
+    && python3 -m pip install rospkg \
+    && pyenv rehash
+
+FROM ros1-gpu-mad-icp-base AS ros1-gpu-mad-icp-livox
+
+# Set up catkin workspace
+WORKDIR /catkin_ws
+
+# Clone and build Livox SDK2
+RUN mkdir -p /livox_sdk \
+    && cd /livox_sdk \
+    && git clone https://github.com/Livox-SDK/Livox-SDK2.git \
+    && cd Livox-SDK2 \
+    && git checkout v1.2.5 \
+    && mkdir build \
+    && cd build \
+    && cmake .. \
+    && make -j$(nproc) \
+    && make install
+
+# Clone, build and install Livox ROS Driver
+RUN mkdir -p /livox_sdk/catkin_ws/src \
+    && cd /livox_sdk/catkin_ws/src \
+    && git clone https://github.com/Livox-SDK/livox_ros_driver2.git \
+    && cd livox_ros_driver2 \
+    && git checkout 1.2.4 \
+    && source /opt/ros/noetic/setup.bash \
+    && ./build.sh ROS1
+
+FROM ros1-gpu-mad-icp-livox AS ros1-gpu-mad-icp-final
+
+RUN mkdir -p /catkin_ws \
+    && cd /catkin_ws/src \
+    && git clone https://github.com/rvp-group/mad-icp.git \
+    && cd mad-icp \
+    && git checkout 0.0.10 \
+    && export PYENV_ROOT="$HOME/.pyenv" \
+    && export PATH="$PYENV_ROOT/bin:$PATH" \
+    && eval "$(pyenv init - bash)" \
+    && source /opt/ros/noetic/setup.bash \
+    && mkdir build && cd build && cmake -DCOMPILE_CPP_APPS=ON ../mad_icp && make -j$(nproc) \
+    && cd .. \
+    && python3 -m pip install .
+
+# # Copy cpp_pubsub package to the catkin workspace (TODO: rename to bag2laz)
+# COPY ./ros_on_docker/cpp_pubsub_ros1/ /catkin_ws/src/cpp_pubsub/
+
+# # Rebuild the catkin workspace to include the cpp_pubsub package
+# RUN source /opt/ros/noetic/setup.bash \
+#     && source /livox_sdk/catkin_ws/devel/setup.bash \
+#     && source /catkin_ws/devel/setup.bash \
+#     && cd /catkin_ws \
+#     && git clone https://github.com/LASzip/LASzip.git ./src/cpp_pubsub/src/3rdparty/LASzip \
+#     && cd ./src/cpp_pubsub/src/3rdparty/LASzip \
+#     && git checkout 4aada844e87066533619bcf0abec32ebee7da5d7 \
+#     && cd /catkin_ws \
+#     && catkin build
+
+# Create a workspace directory for user projects
+RUN mkdir -p /catkin_ws/src
+WORKDIR /catkin_ws
+
+# Source ROS setup in bashrc for interactive shells
+RUN echo "source /opt/ros/noetic/setup.bash" >> /root/.bashrc \
+    && echo "source /livox_sdk/catkin_ws/devel/setup.bash" >> /root/.bashrc
+    # && echo "source /catkin_ws/devel/setup.bash" >> /root/.bashrc
+
+# Setup entrypoint (common to all images using livox_sdk)
+COPY ./ros_on_docker_nvidia/ros1_gpu_lio_sam_entrypoint.sh /ros_entrypoint.sh
+RUN chmod +x /ros_entrypoint.sh
+
+ENTRYPOINT ["/ros_entrypoint.sh"]
+CMD ["bash"]
