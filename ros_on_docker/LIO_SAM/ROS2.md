@@ -1,3 +1,9 @@
+# IMPORTANT
+
+Please use ROS1 docker for LIO-SAM.
+
+Support for ROS2 version of LIO-SAM is still "work-in-progress".
+
 # Docker
 
 ## Docker build

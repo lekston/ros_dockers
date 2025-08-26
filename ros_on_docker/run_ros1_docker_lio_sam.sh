@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Build the Docker image if not already built
-docker build -t ros1-dev-liosam -f Dockerfile_ros1_lio_sam .
+docker build -t ros1-dev-liosam -f ros_on_docker/Dockerfile_ros1_lio_sam .
 
 # Run the container with X11 forwarding and NVIDIA GPU access
 sudo docker run -it --rm \

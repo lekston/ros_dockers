@@ -6,8 +6,7 @@ Additionally, `xhost +local:root` must be run (from the console used to run dock
 
 ## Build and run the docker image
 ```bash
-cd ./ros_on_docker/ros_on_docker/
-./run_ros1_docker_lio_sam.sh
+$ sudo ./ros_on_docker/run_ros1_docker_lio_sam.sh
 ```
 
 ## Running the LIO-SAM

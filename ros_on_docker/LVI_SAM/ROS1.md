@@ -8,7 +8,7 @@ https://drive.google.com/drive/folders/1q2NZnsgNmezFemoxhHnrDnp1JV_bqrgV
 # Build and run docker image:
 
 ```
-$ ros_on_docker/ros_on_docker_nvidia/run_ros1_docker_gpu_lvi_sam.sh
+$ sudo ./ros_on_docker_nvidia/run_ros1_docker_gpu_lvi_sam.sh
 ```
 
 # Experiments on "garden.bag" dataset
