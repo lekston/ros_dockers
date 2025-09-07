@@ -83,11 +83,12 @@ RUN mkdir -p /livox_sdk/catkin_ws/src \
 
 FROM ros1-gpu-mad-icp-livox AS ros1-gpu-mad-icp-final
 
+# NOTE: the latest upstream repo (https://github.com/rvp-group/mad-icp.git tag: 0.0.10) lacks ROS publisher support
 RUN mkdir -p /catkin_ws \
     && cd /catkin_ws/src \
-    && git clone https://github.com/rvp-group/mad-icp.git \
+    && git clone https://github.com/lekston/mad-icp \
     && cd mad-icp \
-    && git checkout 0.0.10 \
+    && git checkout datasets \
     && export PYENV_ROOT="$HOME/.pyenv" \
     && export PATH="$PYENV_ROOT/bin:$PATH" \
     && eval "$(pyenv init - bash)" \
@@ -96,19 +97,18 @@ RUN mkdir -p /catkin_ws \
     && cd .. \
     && python3 -m pip install .
 
-# # Copy cpp_pubsub package to the catkin workspace (TODO: rename to bag2laz)
-# COPY ./ros_on_docker/cpp_pubsub_ros1/ /catkin_ws/src/cpp_pubsub/
+# Copy cpp_pubsub package to the catkin workspace (TODO: rename to bag2laz)
+COPY ./ros_on_docker/cpp_pubsub_ros1/ /catkin_ws/src/cpp_pubsub/
 
-# # Rebuild the catkin workspace to include the cpp_pubsub package
-# RUN source /opt/ros/noetic/setup.bash \
-#     && source /livox_sdk/catkin_ws/devel/setup.bash \
-#     && source /catkin_ws/devel/setup.bash \
-#     && cd /catkin_ws \
-#     && git clone https://github.com/LASzip/LASzip.git ./src/cpp_pubsub/src/3rdparty/LASzip \
-#     && cd ./src/cpp_pubsub/src/3rdparty/LASzip \
-#     && git checkout 4aada844e87066533619bcf0abec32ebee7da5d7 \
-#     && cd /catkin_ws \
-#     && catkin build
+# Rebuild the catkin workspace to include the cpp_pubsub package
+RUN source /opt/ros/noetic/setup.bash \
+    && source /livox_sdk/catkin_ws/devel/setup.bash \
+    && cd /catkin_ws \
+    && git clone https://github.com/LASzip/LASzip.git ./src/cpp_pubsub/src/3rdparty/LASzip \
+    && cd ./src/cpp_pubsub/src/3rdparty/LASzip \
+    && git checkout 4aada844e87066533619bcf0abec32ebee7da5d7 \
+    && cd /catkin_ws \
+    && catkin build
 
 # Create a workspace directory for user projects
 RUN mkdir -p /catkin_ws/src
