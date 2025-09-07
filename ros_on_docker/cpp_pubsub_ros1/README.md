@@ -2,6 +2,10 @@
 
 cpp_pubsub compilation (ROS1 version from FAST-LIVO)
 
+This tool allows conversion of ROS1 bags into the session files compatible with the MapsHD framework.
+
+TODO: consider a more meaningful name for cpp_pubsub (e.g.: bag2laz)
+
 Based on: https://github.com/marcinmatecki/fast-livo-to-hdmapping (ROS1 version)
 
 ## dependencies
