@@ -83,6 +83,8 @@ RUN mkdir -p /livox_sdk/catkin_ws/src \
 
 FROM ros1-gpu-mad-icp-livox AS ros1-gpu-mad-icp-final
 
+ARG STEP_FINAL=True
+
 # NOTE: the latest upstream repo (https://github.com/rvp-group/mad-icp.git tag: 0.0.10) lacks ROS publisher support
 RUN mkdir -p /catkin_ws \
     && cd /catkin_ws/src \

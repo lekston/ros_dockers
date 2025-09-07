@@ -300,7 +300,7 @@ int main(int argc, char **argv)
                 size_t num_points = cloud.points.size();
                 if (num_points == 0) {
                     ROS_ERROR("Error: Empty PointCloud2 message!");
-                    return 1;
+                    continue;  // skip empty message
                 }
 
                 ROS_INFO("Processing %zu points", num_points);

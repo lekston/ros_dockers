@@ -28,6 +28,8 @@ Optional args:
 
 ## Running on NTU Viral dataset
 
+IMPORTANT: NTU Viral dataset requires output cloud transform defined as: `cloud_transform = np.array([[1, -1, -1]])`
+
 ```
 mad_icp --data-path /data/NTU_Viral_dataset/eee_02/ --estimate-path /data/NTU_Viral_dataset/eee_02/output/ --dataset-config /catkin_ws/src/mad-icp/mad_icp/configurations/datasets/ntu_viral.cfg --noviz
 ```
@@ -37,11 +39,31 @@ mad_icp --data-path /data/NTU_Viral_dataset/eee_02/ --estimate-path /data/NTU_Vi
 rosbag record -o /data/NTU_Viral_dataset/MAD_ICP/eee_02_results.bag /cloud/current /cloud/complete  /odometry/imu
 ```
 
-NOTE: consider remapping to `/cloud_registered`
+*Conversion to MapsHD session*
+```
+source /catkin_ws/devel/setup.bash
+rosrun cpp_pubsub listener /data/NTU_Viral_dataset/MAD_ICP/eee_02_results.bag /data/NTU_Viral_dataset/MAD_ICP/eee_02_results_session/ /cloud/current
+```
 
 ## Running on Hilti 2021 dataset
 
 ```
 rosbag info /data/HILTI_2021/construction_site_1/Construction_Site_1.bag
 rosbag info /data/HILTI_2021/uzh_tracking_area_run2/uzh_tracking_area_run2.bag
+```
+
+```
+mad_icp --data-path /data/HILTI_2021/uzh_tracking_area_run2/ --estimate-path /data/HILTI_2021/uzh_tracking_area_run2/output/ --dataset-config /catk
+in_ws/src/mad-icp/mad_icp/configurations/datasets/hilti_2021.cfg --noviz
+```
+
+*Recording*
+```
+rosbag record -o /data/HILTI_2021/MAD_ICP/uzh_tracking_area_run2_results.bag /cloud/current /cloud/complete  /odometry/imu
+```
+
+*Conversion to MapsHD session*
+```
+source /catkin_ws/devel/setup.bash
+rosrun cpp_pubsub listener /data/HILTI_2021/MAD_ICP/uhz_tracking_area_run2_results_2025-09-07-15-04-37.bag /data/HILTI_2021/MAD_ICP/uhz_tracking_area_run2_session/ /cloud/current
 ```
