@@ -257,15 +257,27 @@ bool save_poses(const std::string file_name, std::vector<Eigen::Affine3d> m_pose
 
 int main(int argc, char **argv)
 {
+    const std::string DEFAULT_CLOUD_TOPIC = "/cloud_registered";
+    const std::string DEFAULT_ODOM_TOPIC = "/odometry/imu";
+    std::string cloud_topic = DEFAULT_CLOUD_TOPIC;
+    std::string odom_topic = DEFAULT_ODOM_TOPIC;
 
     if (argc < 3)
     {
-        std::cout << "Usage: " << argv[0] << " <input_bag> <output_directory>" << std::endl;
+        std::cout << "Usage: " << argv[0] << " <input_bag> <output_directory> [cloud_topic] [odom_topic]" << std::endl;
+        std::cout << "Defaults:" << std::endl;
+        std::cout << "  cloud_topic: " << DEFAULT_CLOUD_TOPIC << std::endl;
+        std::cout << "  odom_topic:  " << DEFAULT_ODOM_TOPIC << std::endl;
         return 1;
     }
-    
+
     const std::string input_bag = argv[1];
     const std::string output_directory = argv[2];
+
+    // Parse optional topic names if provided
+    if (argc > 3) cloud_topic = argv[3];
+    if (argc > 4) odom_topic = argv[4];
+
     ros::serialization::Serializer<sensor_msgs::PointCloud2> serializationPointCloud2;
     ros::serialization::Serializer<nav_msgs::Odometry> serializationOdom;
 
@@ -276,8 +288,8 @@ int main(int argc, char **argv)
     rosbag::View view(bag); 
 
     for (const rosbag::MessageInstance& m : view) {
-        if (m.getTopic() == "/lio_sam/mapping/cloud_registered") {
-            ROS_INFO("Received message on topic: /lio_sam/mapping/cloud_registered");
+        if (m.getTopic() == cloud_topic) {
+            ROS_INFO_STREAM("Received message on topic: " << cloud_topic);
 
             sensor_msgs::PointCloud2::ConstPtr cloud_msg = m.instantiate<sensor_msgs::PointCloud2>();
 
@@ -328,8 +340,8 @@ int main(int argc, char **argv)
             }
         }
        
-        if (m.getTopic() == "/odometry/imu") {
-            ROS_INFO("Received message on topic: /odometry/imu");
+        if (m.getTopic() == odom_topic) {
+            ROS_INFO_STREAM("Received message on topic: " << odom_topic);
 
             nav_msgs::Odometry::ConstPtr odom_msg = m.instantiate<nav_msgs::Odometry>();
 
